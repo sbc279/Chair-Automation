@@ -3,13 +3,11 @@ import time
 from secrets import *
 import config
 
-ON = config.ON
 OFF = config.OFF
+ON = config.ON
 UP = config.UP
 DN = config.DN
 lastMotion = UP
-
-logString = ""
 
 def do_connect(ssid=secrets['ssid'],psk=secrets['password']):
     wlan = network.WLAN(network.STA_IF)
@@ -23,7 +21,6 @@ def do_connect(ssid=secrets['ssid'],psk=secrets['password']):
             break
         wait -= 1
         time.sleep(1)
- 
     # Handle connection error
     if wlan.status() != 3:
         printF('Connectivity failed. No Internet connection')
@@ -42,15 +39,13 @@ def init_pins(Pin):
          Pin(x).init()
 
 def printF(msg, msg2 = "", msg3 = "", msg4 = ""):
-    UTC_OFFSET = -5 * 60 * 60
-    config.actual_time = time.localtime(time.time() + UTC_OFFSET)
     tm = config.actual_time
-    formatted_time = "{:02}/{:02}/{:02} {:02}:{:02}:{:02}".format(tm[0], tm[1], tm[2], tm[3], tm[4], tm[5])
-    mssg = "{}: {}{}{}{}"
-    strng = mssg.format(formatted_time, msg, msg2, msg3, msg4)
-    print(strng)
-
-    
+    if config.enableLogging:
+        tm = config.actual_time
+        formatted_time = "{:02}/{:02}/{:02} {:02}:{:02}:{:02}".format(tm[0], tm[1], tm[2], tm[3], tm[4], tm[5])
+        mssg = "{}: {}{}{}{}"
+        strng = mssg.format(formatted_time, msg, msg2, msg3, msg4)
+        print(strng)
   
 def Check_Button_Press():
     trigger = ""
@@ -69,13 +64,15 @@ def Check_Button_Press():
 def RunSeconds(startTick, nowTick, precision = 2):
     return round((nowTick - startTick) / 1000, precision)
 
-def Wait_Time(seconds, spc, edgeDetect = 0, delay = 0): # 0=none, 1=up, 2=dn, 3=home, 4=both
-    spacer = '   wait -> '
+def Wait_Time(seconds, spc = 1, edgeDetect = 0, delay = 0): # 0=none, 1=up, 2=dn, 3=home, 4=both
+
+    spacer = Space(spc) + "wait -> "
     once = False
     tm = time.ticks_ms()
-    
     trigger = ""
+    buttonVal = ""
     edgeDetectStr = "FULL" 
+    
     if edgeDetect == config.ignore_sw_Up:
         edgeDetectStr = "config.sw_Up edge disabled for " + str(delay) + " seconds"    
     if edgeDetect == config.ignore_sw_Dn:
@@ -92,7 +89,7 @@ def Wait_Time(seconds, spc, edgeDetect = 0, delay = 0): # 0=none, 1=up, 2=dn, 3=
     
     complete = False
     while not len(trigger):
-        if RunSeconds(tm, time.ticks_ms()) > 60: # 60 second failsafe
+        if RunSeconds(tm, time.ticks_ms()) > config.tm_failSafeSeconds: # 60 second failsafe
             config.sw_Up.value(OFF)
             config.sw_Dn.value(OFF)
             config.rly_Up.value(OFF)
@@ -100,13 +97,14 @@ def Wait_Time(seconds, spc, edgeDetect = 0, delay = 0): # 0=none, 1=up, 2=dn, 3=
             printF(spacer + " wait -> Complete FAILSAFE abort")
             return False
         
-        if RunSeconds(tm, time.ticks_ms()) > delay:
-            if not once:
-                config.sw_Home_chg == False
-                printF(spacer, "interrupt delay enabled")
-                once = True
-                
+        if not once:
+            config.sw_Home_chg == False
+            printF(spacer, "interrupt delay enabled")
+            once = True
+        
+        if RunSeconds(tm, time.ticks_ms()) > delay: # Don't start checking until after "delay" (if it's not zero)
             buttonVal = Check_Button_Press()
+            
             if (edgeDetect != config.ignore_sw_Dn or edgeDetect != config.ignore_none) and buttonVal == "config.sw_Dn interrupt":
                 trigger = "config.sw_Dn interrupt"
             else:
@@ -115,10 +113,11 @@ def Wait_Time(seconds, spc, edgeDetect = 0, delay = 0): # 0=none, 1=up, 2=dn, 3=
                 else:
                     if (edgeDetect != config.ignore_sw_Home or edgeDetect != config.ignore_none) and buttonVal == "config.sw_Home interrupt":
                         trigger = "config.sw_Home interrupt"
-                    else:        
-                        if (round(time.time() - tm, 2)) > seconds:
-                            trigger = "Time (True)"
-            time.sleep(.250)
+        
+        if trigger == "" and RunSeconds(tm, time.ticks_ms(), 2) > seconds:
+            trigger = "Time (True)"
+            
+        time.sleep(.250)
             
     printF(spacer + " wait -> Complete wait time = ", str(RunSeconds(tm, time.ticks_ms())), " seconds")
     printF(spacer + " wait -> EXIT: Completed - Reason = " + trigger + " - Returning to caller")
@@ -126,57 +125,59 @@ def Wait_Time(seconds, spc, edgeDetect = 0, delay = 0): # 0=none, 1=up, 2=dn, 3=
     once = False
     return trigger == "Time (True)"
 
-def Top_To_Home():
-    spacer = ' topToHome'
+def Space(spc):
+    str = ""
+    for i in range(0, spc):
+        str += " "
+    return str
+
+def Top_To_Home(spc = 1):
+    spacer = Space(spc) + "topToHome -> "
     config.rly_Up.value(ON)
     printF(spacer + " -> Top_To_Home() activated")
     printF(spacer + " -> ", "config.rly_Up ON")
     printF(spacer + " ->  Waiting " + str(config.tm_out_to_home) + " seconds")
     tm = time.ticks_ms()
     
-    result = Wait_Time(config.tm_out_to_home - config.tm_Dn_Runtime, 1, config.ignore_sw_Home, config.tm_1_wait) #ignore sw_Home for 1 second
-    printF(spacer + " -> ", "config.rly_Up OFF")
+    result = Wait_Time(config.tm_out_to_home - config.tm_Dn_Runtime, spc + 1, config.ignore_sw_Home, config.tm_1_wait) #ignore sw_Home for 1 second
+    printF(spacer, "config.rly_Up OFF")
     config.rly_Up.value(OFF)
     config.tm_Dn_Runtime -= RunSeconds(tm, time.ticks_ms())
     
     if result is False:
-        printF(spacer + " -> ", "Out_To_Home interrupt")
-        printF(spacer + " -> ", str(config.tm_top_wait) + " second wait")
+        printF(spacer, "Out_To_Home interrupt")
+        printF(spacer, str(config.tm_top_wait) + " second wait")
         while config.sw_Up.value() == ON or config.sw_Dn.value() == ON:
             time.sleep(.1)
     else:
-        printF(spacer + " -> ", str(config.tm_top_wait) + " second wait")
-        result = Wait_Time(config.tm_top_wait, 2, config.ignore_sw_Home)
+        printF(spacer, str(config.tm_top_wait) + " second wait")
+        result = Wait_Time(config.tm_top_wait, spc + 1, config.ignore_sw_Home)
             
         if result is False:
-            printF(spacer + " -> ", "Out_To_Home TopWait interrupt")
+            printF(spacer, "Out_To_Home TopWait interrupt")
         else:
-            Down_To_Home()
+            Down_To_Home(spc + 1)
       
     printF(spacer + " -> EXIT: Returning to caller")
-    
-def Down_To_Home():
-    spacer = ' downToHome'
+
+def Down_To_Home(spc = 1):
+    spacer = Space(spc) + "downToHome -> "
     aborted = False
     tm = time.ticks_ms()
-    printF(spacer + " -> ", "goDn_Rcln & GPIO.wait_for_edge(sw_posHome)")
+    printF(spacer, "goDn_Rcln & GPIO.wait_for_edge(sw_posHome)")
     config.rly_Dn.value(ON)
-    printF(spacer + " -> ", "config.rly_Dn ON")
+    printF(spacer, "config.rly_Dn ON")
     
-    result = Wait_Time(config.tm_out_to_home - config.tm_Dn_Runtime, 2, config.ignore_sw_Dn, config.tm_1_wait)
+    result = Wait_Time(abs(config.tm_Dn_Runtime), spc + 1, config.ignore_both, 1) #Dn, config.tm_1_wait)
     config.rly_Dn.value(OFF)
     config.tm_Dn_Runtime += RunSeconds(tm, time.ticks_ms())
     
-    printF(spacer + " -> ", "config.rly_Dn OFF")
+    printF(spacer, "config.rly_Dn OFF")
     
-    if result is False and config.sw_Home.value() == ON:
-        printF(spacer + " -> ", ": complete.")
+    if result is False or config.sw_Home.value() == ON:
+        printF(spacer, ": complete.")
     else:
-        printF(spacer + " -> ", "Dn timeout reached: ", str(config.tm_out_to_home), ' seconds without home interrupt')
+        printF(spacer, "Dn timeout reached: ", str(config.tm_out_to_home), ' seconds without home interrupt')
               
-    printF(spacer + " -> EXIT: Returning to caller")
+    printF(spacer + " EXIT: Returning to caller")
                            
-
-
-
-
