@@ -48,10 +48,10 @@ def printF(msg, msg2 = "", msg3 = "", msg4 = ""):
     mssg = "{}: {}{}{}{}"
     strng = mssg.format(formatted_time, msg, msg2, msg3, msg4)
     print(strng)
-#     if config.enableLogging == True:
-    f = open("chairFile.txt", "a")
-    f.write(strng + "\n")
-    f.close()      
+    if config.enableLogging == True:
+        f = open("chairFile.txt", "a")
+        f.write(strng + "\n")
+        f.close()
          
          
 def Check_Button_Press():
@@ -166,7 +166,7 @@ def Top_To_Home(spc = 1):
     printF(spacer + "config.rly_Up ON")
     printF(spacer + "Waiting " + str(config.tm_out_to_home + config.tm_Dn_Runtime) + " seconds")
     tm = time.ticks_ms()
-    result = Wait_Time(config.tm_out_to_home + config.tm_Dn_Runtime, spc + 1, config.ignore_sw_Home, config.tm_1_wait) #ignore sw_Home for 1 second
+    result = Wait_Time(config.tm_out_to_home + config.tm_Dn_Runtime, spc + 1, config.ignore_sw_Home, config.tm_5_wait) #ignore sw_Home for 1 second
     config.tm_Dn_Runtime -= RunSeconds(tm, time.ticks_ms())
     printF(spacer, "config.rly_Up OFF")
     config.rly_Up.value(OFF)
@@ -198,8 +198,9 @@ def Down_To_Home(spc = 1):
     config.rly_Dn.value(OFF)
     printF(spacer, "config.rly_Dn OFF")
     
-    if result is False or config.sw_Home.value() == ON:
-        printF(spacer, ": complete.")
+    if config.sw_Home.value() == ON:
+        config.tm_Dn_Runtime = 0
+        printF(spacer, ": complete. At home")
     else:
         printF(spacer, "Dn timeout reached: ", str(config.tm_out_to_home), ' seconds without home interrupt')
               

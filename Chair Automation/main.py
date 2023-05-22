@@ -37,36 +37,37 @@ def Is_Home(mute = False):
 def irq_sw_Home(p):
     config.tm_Dn_Runtime = 0
     config.sw_Home_chg = True  # both rise and fall
-    config.led_home.value(config.sw_Home.value())
+    config.led_home.value(p.value())
 
 def irq_rly_Up(p):
-    config.led_rly_Up.value(not config.led_rly_Up.value())
+    print(str(p.value()))
+    config.led_upper.value(p.value())
     
 def irq_rly_Dn(p):
-    config.led_rly_Dn.value(not config.led_rly_Dn.value())
+    config.led_lower.value(p.value())
     
-# def irq_sw_Up(p):
-#     config.led_log_Up.value(not config.sw_up.value())
-#     config.led_log_Up.Value(not config.sw_Up.value())
-# def irq_sw_Dn(p):
-#     config.led_log_Dn.value(not config.led_log_Dn.value())
-#     config.led_log_Dn.Value(config.sw_Dn.value())
+def irq_sw_Up(p):
+    config.led_log_Up.value(p.value())
+
+def irq_sw_Dn(p):
+    config.led_occup.value(p.value())
     
 config.sw_Home.irq(lambda p:irq_sw_Home(p)) 	  # interrupt for sw_Home
 config.rly_Up.irq(lambda p:irq_rly_Up(p)) 		  # interrupt for rly_Up
 config.rly_Dn.irq(lambda p:irq_rly_Dn(p)) 		  # interrupt for rly_Dn
-# config.sw_Up.irq(lambda p:irq_sw_Up(p)) # interrupt for led_log_Up
-# config.sw_Dn.irq(lambda p:irq_sw_Dn(p)) # interrupt for led_log_Up
+config.sw_Up.irq(lambda p:irq_sw_Up(p)) # interrupt for led_log_Up
+config.sw_Dn.irq(lambda p:irq_sw_Dn(p)) # interrupt for led_log_Ddn
 
 ntptime.settime() # set pico's clock
 UTC_OFFSET = -5 * 60 * 60   # change the '-5' according to your timezone
 config.actual_time = time.localtime(time.ticks_ms() + UTC_OFFSET)
 config.rly_Up.value(OFF)
 config.rly_Dn.value(OFF)
-config.led_rly_Up.value(OFF)
-config.led_rly_Dn.value(OFF)
-config.led_log_Up.value(OFF)
-config.led_log_Dn.value(OFF)
+
+config.led_upper.value(OFF)
+config.led_lower.value(OFF)
+config.led_power.value(OFF)
+config.led_occup.value(OFF)
 config.led_home.value(OFF)
 
 config.tm_Dn_Runtime = 0
@@ -87,6 +88,24 @@ print("")
 print("----------------------------------------------------------------------------")
 print("")
 print("chair.py startup    BETA version ", config.version)
+
+#for i in range(1,2):
+    
+config.led_upper.value(ON)
+time.sleep(.321)
+
+config.led_lower.value(ON)
+time.sleep(.321)
+
+config.led_power.toggle()
+time.sleep(.321)
+
+config.led_occup.value(ON)
+time.sleep(.321)
+
+config.led_home.value(ON)
+time.sleep(.321)
+
 Is_Home()
 print("")
 
@@ -110,15 +129,15 @@ try:
                         printF("main -> ", "UNUSUAL STATE: VALUE COMBO NOT PERMITTED: AtHome=False with tm_Dn_Runtime=0")
                         printF("                       Possible broken home switch/wire")
                         printF("main -> ", "using a default ", str(config.tm_10_wait)," seconds")
-                        result = Wait_Time(config.tm_10_wait, 1, config.ignore_sw_Up, .5)
+                        result = Wait_Time(config.tm_Dn_Runtime, 1, config.ignore_sw_Up, .5)
                         printF("main -> ", "rly_Up OFF")
                         config.rly_Up.value(OFF)
                         continue
                     else:
                         result = Wait_Time(config.tm_Dn_Runtime, 1, config.ignore_sw_Up, .5)
                         config.tm_Dn_Runtime -= RunSeconds(tm, time.ticks_ms())
-                    printF("main -> ", "rly_Up OFF")
-                    config.rly_Up.value(OFF)
+                        printF("main -> ", "rly_Up OFF")
+                        config.rly_Up.value(OFF)
                     if Is_Home(True):
                         printF("main -> ", "Home position overrun: compensating " + str(config.tm_HomeOverRun) + " seconds...")
                         time.sleep(.1)
@@ -142,11 +161,11 @@ try:
                 printF("main -> ", "sw_Dn pressed")
                 config.rly_Dn.value(ON)
                 printF("main -> ", "rly_Dn ON")
-                if not Is_Home() or config.tm_Dn_Runtime < 0:
+                if not Is_Home() and config.tm_Dn_Runtime < 0:
                     printF("main -> calling Down_To_Home()")
                     Down_To_Home()
                 else:
-                    Wait_Time(config.tm_down_step, 1, config.ignore_sw_Home, config.tm_down_step)
+                    Wait_Time(config.tm_down_step, 1, config.ignore_sw_Home, 1.5)
                     config.tm_Dn_Runtime += RunSeconds(tm, time.ticks_ms())
                 once = True
             config.rly_Dn.value(OFF)
