@@ -1,3 +1,5 @@
+# version = "2.0.5.30"
+
 from machine import Pin
 from machine import Timer
 import ntptime
@@ -18,7 +20,7 @@ config.tm_Dn_Runtime = 0
 once = False
 printF("main.py IPL: (c)2023 Craver Engineering LLC \n\n")
 
-ip = do_connect()
+#ip = do_connect()
 
 def Is_Home(mute = False):
     config.tm_Dn_Runtime = round(config.tm_Dn_Runtime, 2)
@@ -36,40 +38,44 @@ def Is_Home(mute = False):
     
 def irq_sw_Home(p):
     config.tm_Dn_Runtime = 0
-    config.sw_Home_chg = True  # both rise and fall
     config.led_home.value(p.value())
 
-def irq_rly_Up(p):
-    print(str(p.value()))
-    config.led_upper.value(p.value())
-    
-def irq_rly_Dn(p):
-    config.led_lower.value(p.value())
-    
-def irq_sw_Up(p):
-    config.led_log_Up.value(p.value())
+# upper limit
+def irq_sw_Upper(p):
+    config.led_upper.value(not p.value())
 
-def irq_sw_Dn(p):
-    config.led_occup.value(p.value())
-    
-config.sw_Home.irq(lambda p:irq_sw_Home(p)) 	  # interrupt for sw_Home
-config.rly_Up.irq(lambda p:irq_rly_Up(p)) 		  # interrupt for rly_Up
-config.rly_Dn.irq(lambda p:irq_rly_Dn(p)) 		  # interrupt for rly_Dn
-config.sw_Up.irq(lambda p:irq_sw_Up(p)) # interrupt for led_log_Up
-config.sw_Dn.irq(lambda p:irq_sw_Dn(p)) # interrupt for led_log_Ddn
+# lower limit
+def irq_sw_Lower(p):
+    config.led_lower.value(not p.value())
 
-ntptime.settime() # set pico's clock
-UTC_OFFSET = -5 * 60 * 60   # change the '-5' according to your timezone
+# home limit
+def irq_home(p):
+    config.led_home.value(not p.value())
+    
+# occup limit    
+def irq_sw_Occup(p):
+    config.led_occup.value(not p.value())
+    
+config.sw_Home.irq(lambda p:irq_home(p)) 	# interrupt for led_Home
+config.sw_Upper.irq(lambda p:irq_sw_Upper(p))   # interrupt for led_upper
+config.sw_Lower.irq(lambda p:irq_sw_Lower(p))   # interrupt for led_lower
+config.sw_Occup.irq(lambda p:irq_sw_Occup(p))   # interrupt for led_occup
+
+def SwitchDebounce():
+    while config.sw_Dn.value() == 1 or config.sw_Dn_2.value() == 1 or config.sw_Up.value() == 1 or config.sw_Up_2.value() == 1 or config.sw_Main_Dn.value() == 0 or config.sw_Main_Dn2.value() == 0 or config.sw_Main_Up.value() == 0 or config.sw_Main_Up2.value() == 0:
+        time.sleep(.1)
+        
+# ntptime.settime() # set pico's clock
+UTC_OFFSET = -5 * 60 * 60   # change the '-5' according to your time zone
 config.actual_time = time.localtime(time.ticks_ms() + UTC_OFFSET)
 config.rly_Up.value(OFF)
 config.rly_Dn.value(OFF)
 
-config.led_upper.value(OFF)
-config.led_lower.value(OFF)
-config.led_power.value(OFF)
-config.led_occup.value(OFF)
-config.led_home.value(OFF)
-
+config.led_occup.value(0)
+config.led_lower.value(0)
+config.led_upper.value(0)
+config.led_home.value(0)
+    
 config.tm_Dn_Runtime = 0
 
 print("\n")
@@ -89,22 +95,25 @@ print("-------------------------------------------------------------------------
 print("")
 print("chair.py startup    BETA version ", config.version)
 
-#for i in range(1,2):
-    
-config.led_upper.value(ON)
-time.sleep(.321)
+ledTime = float(0.08)
+for x in 1,2,3:
+    config.led_occup.value(1)
+    time.sleep(ledTime)
+    config.led_lower.value(1)
+    time.sleep(ledTime)
+    config.led_upper.value(1)
+    time.sleep(ledTime)
+    config.led_home.value(1)
 
-config.led_lower.value(ON)
-time.sleep(.321)
-
-config.led_power.toggle()
-time.sleep(.321)
-
-config.led_occup.value(ON)
-time.sleep(.321)
-
-config.led_home.value(ON)
-time.sleep(.321)
+    time.sleep(ledTime)
+    config.led_occup.value(0)
+    time.sleep(ledTime)
+    config.led_lower.value(0)
+    time.sleep(ledTime)
+    config.led_upper.value(0)
+    time.sleep(ledTime)
+    config.led_home.value(0)
+    time.sleep(ledTime)
 
 Is_Home()
 print("")
@@ -114,7 +123,8 @@ try:
         tm = time.ticks_ms()
         
  # Logic UP switch...
-        if config.sw_Up.value() == ON:
+        if config.sw_Up.value() == 1 and config.sw_Dn.value() == 0:
+            once = False
             if not once:
                 printF("------------------------- UP Procedure Started -------------------------")
                 printF("main -> ", "sw_Up pressed")
@@ -129,12 +139,12 @@ try:
                         printF("main -> ", "UNUSUAL STATE: VALUE COMBO NOT PERMITTED: AtHome=False with tm_Dn_Runtime=0")
                         printF("                       Possible broken home switch/wire")
                         printF("main -> ", "using a default ", str(config.tm_10_wait)," seconds")
-                        result = Wait_Time(config.tm_Dn_Runtime, 1, config.ignore_sw_Up, .5)
+                        result = Wait_Time(config.tm_Dn_Runtime, 1, 0, config.tm_sw_bounce)
                         printF("main -> ", "rly_Up OFF")
                         config.rly_Up.value(OFF)
                         continue
                     else:
-                        result = Wait_Time(config.tm_Dn_Runtime, 1, config.ignore_sw_Up, .5)
+                        result = Wait_Time(config.tm_Dn_Runtime, 1, 0, config.tm_sw_bounce)
                         config.tm_Dn_Runtime -= RunSeconds(tm, time.ticks_ms())
                         printF("main -> ", "rly_Up OFF")
                         config.rly_Up.value(OFF)
@@ -142,44 +152,80 @@ try:
                         printF("main -> ", "Home position overrun: compensating " + str(config.tm_HomeOverRun) + " seconds...")
                         time.sleep(.1)
                         config.rly_Dn.value(ON)
-                        Wait_Time(config.tm_HomeOverRun, 1, config.ignore_sw_Home)
+                        Wait_Time(config.tm_HomeOverRun, 1, 0, config.tm_sw_bounce)
                         config.rly_Dn.value(OFF)
                         printF("main -> overrun complete. ", "rly_Dn OFF")
             config.rly_Up.value(OFF)
             lastMotion = UP
-            while config.sw_Up.value() == ON:
-                time.sleep(.1)
+            SwitchDebounce()
+#             while config.sw_Dn.value() == 1 or config.sw_Dn_2.value() == 1 or config.sw_Up.value() == 1 or config.sw_Up_2.value() == 1:
+#                 time.sleep(.1)
         if once is True:
             Is_Home()
             printF("------------------------- UP Procedure Completed -------------------------\n")
             once = False
 
 # Logic DN switch...
-        if config.sw_Dn.value() == ON:
+        if config.sw_Dn.value() == 1 and config.sw_Up.value() == 0:
             if not once:
                 printF("------------------------- DOWN Procedure Started -------------------------")
                 printF("main -> ", "sw_Dn pressed")
                 config.rly_Dn.value(ON)
                 printF("main -> ", "rly_Dn ON")
-                if not Is_Home() and config.tm_Dn_Runtime < 0:
+                if not Is_Home() or config.tm_Dn_Runtime < 0:
                     printF("main -> calling Down_To_Home()")
                     Down_To_Home()
                 else:
-                    Wait_Time(config.tm_down_step, 1, config.ignore_sw_Home, 1.5)
+                    Wait_Time(config.tm_down_step, 1, 0, config.tm_sw_bounce)
                     config.tm_Dn_Runtime += RunSeconds(tm, time.ticks_ms())
                 once = True
             config.rly_Dn.value(OFF)
             printF("main -> ", "rly_Dn OFF")
             lastMotion = DN
-            while config.sw_Dn.value() == ON:
-                time.sleep(.1)
+            SwitchDebounce()
+#             while config.sw_Dn.value() == 1 or config.sw_Dn_2.value() == 1 or config.sw_Up.value() == 1 or config.sw_Up_2.value() == 1:
+#                 time.sleep(.1)
         if once is True:
             Is_Home()
             printF("------------------------- DOWN Procedure Completed -------------------------\n")
             once = False
+
+# Logic UP2 switch...
+        while Check_Button_Press() == config.id_sw_Up2: # or Check_Button_Press() == config.id_sw_Main_Up or Check_Button_Press() == config.id_sw_Main_Up2:
+            if not once:
+                config.rly_Up.value(ON)
+                #config.led_main_Up.value(ON)
+                printF("-------------------- MAIN UP --------------------")
+                printF("main -> ", "sw_Main_Up pressed")
+                once = True
+        if once is True:
+            config.rly_Up.value(OFF)
+            ut = time.ticks_ms()
+            config.tm_Dn_Runtime -= RunSeconds(tm, ut)
+            printF("main -> ", "sw_Main_Up released (", str(RunSeconds(tm, ut) ), ") seconds")
+            Is_Home()
+            print("")
+            once = False
             
+# Logic Dn2 switch...
+        while Check_Button_Press() == config.id_sw_Dn2: # or Check_Button_Press() == config.id_sw_Main_Dn or Check_Button_Press() == config.id_sw_Main_Dn2:
+            if not once:
+                config.rly_Dn.value(ON)
+                #config.led_main_Up.value(ON)
+                printF("-------------------- MAIN DOWN--------------------")
+                printF("main -> ", "sw_Main_Down pressed")
+                once = True
+        if once is True:
+            config.rly_Dn.value(OFF)
+            ut = time.ticks_ms()
+            config.tm_Dn_Runtime += RunSeconds(tm, ut)
+            printF("main -> ", "sw_Main_Down released (", str(RunSeconds(tm, ut) ), ") seconds")
+            Is_Home()
+            print("")
+            once = False            
+
 # Main UP switch...
-        while config.sw_Main_Up.value() == ON or config.sw_Main2_Up.value() == ON:
+        while (config.sw_Main_Up.value() == 1 and config.sw_Main_Dn.value() == 0) or (config.sw_Main_Up2.value() == 0 and config.sw_Main_Dn2.value() == 1):
             if not once:
                 config.rly_Up.value(ON)
                 #config.led_main_Up.value(ON)
@@ -196,7 +242,7 @@ try:
             once = False
 
 # Main DN switch...         
-        while config.sw_Main_Dn.value() == ON or config.sw_Main2_Dn.value() == ON:
+        while (config.sw_Main_Dn.value() == 1 and config.sw_Main_Up.value() == 0) or (config.sw_Main_Dn2.value() == 0 and config.sw_Main_Up2.value() == 1):
             if not once:
                 config.rly_Dn.value(ON)
                 printF("-------------------- MAIN DOWN --------------------")
@@ -229,7 +275,12 @@ try:
 # ^^^^^^^^^^^^^^^^^^ Loop point ^^^^^^^^^^^^^^^^^^
 
 # Exit/error...
-except KeyboardInterrupt:  
+except KeyboardInterrupt:
+    config.led_home.value(0)
+    config.led_upper.value(0)
+    config.led_lower.value(0)
+    config.led_occup.value(0)
+
     # Make sure relays are off
     config.rly_Up.value(OFF)
     config.rly_Dn.value(OFF)
@@ -247,6 +298,4 @@ except KeyboardInterrupt:
 #     f.close()
 
 #finally:
-
-
 
