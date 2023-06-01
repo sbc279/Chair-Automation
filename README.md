@@ -1,4 +1,5 @@
 # Chair Automation
+<div><H3><i>(Attention Thonny users: Use the *.py files in the 'Chair Automation' directory for your PICO)</i></H3><br /></div>
 
 # <div align="center">CONTRIBUTORS WELCOMED</div>
 
