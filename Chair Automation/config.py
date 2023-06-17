@@ -1,18 +1,18 @@
 from machine import Pin
 import machine
 # version...
-version = "2.0.6.14"
+version = "2.0.6.15"
 
 enablePrint = True
-enableLogging = True
+enableLogging = False
 debugLog = "ChairLog.log"
 
 # Timing variables (float) seconds...
 tm_failSafeSeconds = float(60.0)
-tm_out_to_home = float(20.0)
-tm_top_wait = float(8.0)
-tm_down_step = float(8.0)
-tm_HomeOverRun = float(.40)
+tm_out_to_home = float(23.0)
+tm_top_wait = float(10.0)
+tm_down_step = float(9.0)
+tm_HomeOverRun = float(.9)
 tm_sw_bounce = float(.5)
 tm_1_wait = float(1.0)
 tm_10_wait = float(8.0)
@@ -49,8 +49,8 @@ sw_Home 	= Pin(2,  Pin.IN, pull = Pin.PULL_UP)     # Limit switch - enable inter
 sw_Upper 	= Pin(3,  Pin.IN, pull = Pin.PULL_UP)     # Limit switch - enable internal pull-up resistor
 sw_Lower 	= Pin(4,  Pin.IN, pull = Pin.PULL_UP)     # Limit switch - enable internal pull-up resistor
 sw_Occup    = Pin(5,  Pin.IN, pull = Pin.PULL_UP)     # Limit switch - enable internal pull-up resistor
-sw_Main_Dn2 = Pin(7,  Pin.IN, pull = Pin.PULL_DOWN)   # enable internal pull-down resistor
-sw_Main_Up2 = Pin(6,  Pin.IN, pull = Pin.PULL_DOWN)   # enable internal pull-down resistor
+sw_Main_Dn2 = Pin(6,  Pin.IN, pull = Pin.PULL_DOWN)   # enable internal pull-down resistor
+sw_Main_Up2 = Pin(7,  Pin.IN, pull = Pin.PULL_DOWN)   # enable internal pull-down resistor
 sw_Main_Up	= Pin(8,  Pin.IN, pull = Pin.PULL_DOWN)   # enable internal pull-down resistor
 sw_Main_Dn	= Pin(9,  Pin.IN, pull = Pin.PULL_DOWN)   # enable internal pull-down resistor
 sw_Up   	= Pin(10, Pin.IN, pull = Pin.PULL_DOWN)   # enable internal pull-down resistor

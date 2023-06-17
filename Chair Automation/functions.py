@@ -1,4 +1,4 @@
-# version = 2.0.6.14
+# version = 2.0.6.15
 
 import network
 import time
@@ -55,6 +55,7 @@ def printF(msg, msg2 = "", msg3 = "", msg4 = "", msg5 = "", msg6 = ""):
         f.close()
         
 def RunSeconds(startTick, nowTick, precision = 2):
+    
     return round((nowTick - startTick) / 1000, precision)
 
 def IsPlural(number):
@@ -168,12 +169,12 @@ def Wait_Time(seconds, spc = 1, watchedBin = 0, checkRunTime = False):
        watchedBinStr = watchedBinStr.rstrip(lf)        
     
     while exitReason == "":
-        if round(config.tm_Dn_Runtime, 2) > config.tm_failSafeSeconds: # 60 second failsafe
-            config.sw_Up.value(OFF)
-            config.sw_Dn.value(OFF)
-            config.rly_Up.value(OFF)
-            config.rly_Dn.value(OFF)
-            exitReason = " wait -> Complete FAILSAFE abort"
+#         if round(config.tm_Dn_Runtime, 2) > config.tm_failSafeSeconds: # 60 second failsafe
+#             config.sw_Up.value(OFF)
+#             config.sw_Dn.value(OFF)
+#             config.rly_Up.value(OFF)
+#             config.rly_Dn.value(OFF)
+#             exitReason = " wait -> Complete FAILSAFE abort"
 
         if checkRunTime == True:
             if abs(config.tm_Dn_Runtime) - RunSeconds(wtm, time.ticks_ms()) <= 0:
@@ -192,7 +193,8 @@ def Wait_Time(seconds, spc = 1, watchedBin = 0, checkRunTime = False):
     printF(spacer + "EXIT: Completed - Reason = " + exitReason)
     printF(spacer + "Complete wait time = ", str(RunSeconds(wtm, time.ticks_ms())), " seconds - Returning to caller")
     once = False
-    return exitReason #== "Time (True)"
+    
+    return exitReason + "," + str(RunSeconds(wtm, time.ticks_ms())) #== "Time (True)"
 
 def Up_To_Out(spc = 1):
     spacer = Space(spc) + "topToHome -> "
@@ -207,23 +209,31 @@ def Up_To_Out(spc = 1):
     else:
         printF(spacer + "Waiting " + str(config.tm_out_to_home) + " seconds")
         result = Wait_Time(config.tm_out_to_home + config.tm_Dn_Runtime, spc + 1, config.id_all - config.id_sw_home - config.id_sw_lower)
+    print(result)
+    resultStr = result.split(',')[0]
+    resultVal = result.split(',')[1]
+    
     printF(spacer, "config.rly_Up OFF")
     config.rly_Up.value(OFF)
-    if result != "config.sw_Upper interrupt" and result != "Time (True)":
+    
+    if resultStr != "config.sw_Upper interrupt" and resultStr != "Time (True)":
         printF(spacer, "Out_To_Home interrupt")
         printF(spacer + "EXIT: Returning to caller (l:234)")
         return result
     else:
 ## ----- TopWait -----
         printF(spacer, str(config.tm_top_wait) + " second wait")
-        result = Wait_Time(config.tm_top_wait, spc + 1, config.id_all - config.id_sw_home - config.id_sw_lower)
-        if result != "Time (True)":
+        result = Wait_Time(config.tm_top_wait, spc + 1, config.id_all - config.id_sw_home - config.id_sw_lower).strip()
+        resultStr = result.split(',')[0]
+        resultVal = result.split(',')[1]
+
+        if resultStr != "Time (True)":
             printF(spacer, "Out_To_Home TopWait interrupt")
         else:
 ## ----- Go DOWN -----
             printF(spacer, "TopWait complete")
             result = Down_To_Home(spc + 1)
-            
+     
     printF(spacer + "EXIT: Returning to caller")
     return result
 
@@ -234,43 +244,49 @@ def Down_To_Home(spc = 1):
     printF(spacer, "config.rly_Dn ON")
     printF(spacer, "config.tm_Dn_Runtime = " + str(config.tm_out_to_home))
     result = Wait_Time(config.tm_out_to_home, spc + 1, config.id_all - config.id_sw_lower, False)
+
+    resultStr = result.split(',')[0]
+    resultVal = result.split(',')[1]
+
     config.rly_Dn.value(OFF)
     printF(spacer, "config.rly_Dn OFF")
     if config.sw_Home.value() == ON:
         #config.tm_Dn_Runtime = 0
         printF(spacer, ": complete. At home")
-    else:
-        if result == "Time (True)":
+        if resultStr == "Time (True)" or resultStr == "config.sw_Home interrupt":
             printF(spacer, "Dn timeout reached: ", str(config.tm_out_to_home), ' seconds without home interrupt')
+            config.tm_Dn_Runtime = 0.0
         else:
-            if result == "config.tm_Dn_Runtime reached 0":
+            if resultStr == "config.tm_Dn_Runtime reached 0":
                 printF(spacer, "config.tm_Dn_Runtime reached 0")
-                #config.tm_Dn_Runtime = 0.0
             else:
-                printF(spacer, result, " interrupt detected")
+                printF(spacer, resultStr, " interrupt detected")
+
+    runTime = float(resultVal)
+    config.tm_Dn_Runtime += runTime
     printF(spacer + " EXIT: Returning to caller")
     return result
                            
 def SelfCheck():
     ledTime = float(0.05)
     
-    config.led_lower.value(1)
+    config.led_lower.on()
     time.sleep(ledTime)
-    config.led_occup.value(1)
+    config.led_occup.on()
     time.sleep(ledTime)
-    config.led_upper.value(1)
+    config.led_upper.on()
     time.sleep(ledTime)
-    config.led_home.value(1)
+    config.led_home.on()
     
     time.sleep(.5)
     
-    config.led_home.value(0)
+    config.led_home.off()
     time.sleep(ledTime)
-    config.led_upper.value(0)
+    config.led_upper.off()
     time.sleep(ledTime)
-    config.led_occup.value(0)
+    config.led_occup.off()
     time.sleep(ledTime)
-    config.led_lower.value(0)
+    config.led_lower.off()
     time.sleep(ledTime)
     #ErrorFlash() # not really an error
 
@@ -280,10 +296,10 @@ def ErrorFlash(id = 0):
     old_Hi = config.led_upper.value()
     old_Home = config.led_home.value()
     
-    config.led_occup.value(0)
-    config.led_lower.value(0)
-    config.led_upper.value(0)
-    config.led_home.value(0)
+    config.led_occup.off()
+    config.led_lower.off()
+    config.led_upper.off()
+    config.led_home.off()
     
     for x in [1, 2, 3, 4, 5, 6]:
         config.led_lower.toggle()
