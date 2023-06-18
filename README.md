@@ -2,7 +2,7 @@
 <div><H3><i>(Attention Thonny users: Use the *.py files in the 'Chair Automation' directory for your PICO)</i></H3><br /></div>
 
 
-6/15 UPDATE: The project is now in the 'prototype' stage. The first, 'sloppy' concept stage mentioned above, has given way to a much more 'professional' look. At least I hope so
+6/15 UPDATE: The project is now in the 'prototype' stage. The 'proof-of-concept' stage has given way to a much more 'professional' look.
 # <div align="center">CONTRIBUTORS WELCOMED</div>
 
 <b>I have no schematic or code reviewers, but I really could use another set of eyes on this. Also, although this device can successfully connect to a Wi-Fi access point, I could really use help accessing PICO's file system remotely (Telnet, SSH, etc.).<br /><div align="center"><i>I NEED SOMEONE'S EXPERTISE AND HELP!</i></div></b><br>
