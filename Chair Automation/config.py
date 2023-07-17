@@ -1,7 +1,8 @@
 from machine import Pin
 import machine
 # version...
-version = "2.0.6.30"
+version = "2.0.7.17"
+
 
 # Options...
 enableLogging = True
@@ -10,9 +11,10 @@ logFilename = "ChairLog.log"
 
 ignoreLimitsSwitches = False
 use_sw_RiseHome = True
-use_sw_ReclHome = False
+use_sw_ReclHome = True
 use_sw_Upper = False
 use_sw_Occup = False
+use_Times = False
 
 enableWiFi = False
 enableJ9 = False
@@ -51,7 +53,8 @@ id_led_occup = 	 32768
 id_sw_all = 	    255
 id_sw_allLimits =	3840
 id_all =			4095
-id_ignoreLimitsSwitches = 0
+id_ignoreLimitsSwitches = 0.
+
 if ignoreLimitsSwitches:
     id_ignoreLimitsSwitches = id_sw_allLimits
     
@@ -59,8 +62,8 @@ if ignoreLimitsSwitches:
 rly_Up 		= Pin(0,  Pin.OUT)                        # Main UP relay output
 rly_Dn 		= Pin(1,  Pin.OUT)                        # Main DOWN relay output
 sw_RiseHome	= Pin(2,  Pin.IN, pull = Pin.PULL_UP)     # Limit switch - enable internal pull-up resistor
-sw_Upper 	= Pin(3,  Pin.IN, pull = Pin.PULL_UP)     # Limit switch - enable internal pull-up resistor
-sw_ReclHome	= Pin(4,  Pin.IN, pull = Pin.PULL_UP)     # Limit switch - enable internal pull-up resistor
+sw_ReclHome = Pin(3,  Pin.IN, pull = Pin.PULL_UP)     # Limit switch - enable internal pull-up resistor
+sw_Upper	= Pin(4,  Pin.IN, pull = Pin.PULL_UP)     # Limit switch - enable internal pull-up resistor
 sw_Occup    = Pin(5,  Pin.IN, pull = Pin.PULL_UP)     # Limit switch - enable internal pull-up resistor
 sw_Main_Dn2 = Pin(6,  Pin.IN, pull = Pin.PULL_DOWN)   # enable internal pull-down resistor
 sw_Main_Up2 = Pin(7,  Pin.IN, pull = Pin.PULL_DOWN)   # enable internal pull-down resistor
@@ -74,13 +77,13 @@ sw_J9		= Pin(14, Pin.IN, pull = Pin.PULL_UP)     # J9 plug - enable internal pul
 plug_J9 	= Pin(15, Pin.OUT)                        # Plug J9 power
 
 #	 NOTE: 'led_power' is tied directly to pin 36 (3.3vdc) and NOT under program control
-led_upper   = Pin(18, Pin.OUT) # 18=yel
-led_lower   = Pin(19, Pin.OUT) # 19=red
+led_upper   = Pin(19, Pin.OUT) # 18=yel
+led_recl    = Pin(18, Pin.OUT) # 19=red
 led_home	= Pin(20, Pin.OUT) # 20=blu
 led_occup   = Pin(21, Pin.OUT) # 21=wht
 
 #   All unused PICO GPIO pins are scoped INPUT and pulled DOWN by default
-unusedGpio = [14, 16, 17, 22]
+unusedGpio = [16, 17, 22]
 for i in unusedGpio:
     Pin(i, Pin.IN, pull = Pin.PULL_DOWN)
 
@@ -95,6 +98,8 @@ OFF = True
 UP = True
 DN = False
 
+ledFreq = 1000
+duty_cycle = 10 # Between 0 - 100 %
 
 
 
