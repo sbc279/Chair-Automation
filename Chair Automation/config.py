@@ -6,25 +6,27 @@ version = "2.0.7.17"
 
 # Options...
 enableLogging = True
-enableFileLog = False
+enableFileLog = False 
 logFilename = "ChairLog.log"
 
 ignoreLimitsSwitches = False
 use_sw_RiseHome = True
-use_sw_ReclHome = True
+use_sw_ReclHome = False
 use_sw_Upper = False
 use_sw_Occup = False
-use_Times = False
-
+use_Times = True
 enableWiFi = False
 enableJ9 = False
+
+ledFreq = 1000
+duty_cycle = 10 # Between 0 - 100 %
 
 # Timing variables (float) seconds...
 tm_failSafeSeconds = float(60.0)
 tm_home_to_out = float(23.0)
 tm_top_wait = float(10.0)
 tm_down_step = float(8.5)
-tm_HomeOverRun = float(.9)
+tm_HomeOverRun = float(1.5)
 tm_sw_bounce = float(.5)
 tm_1_wait = float(1.0)
 tm_10_wait = float(8.0)
@@ -53,8 +55,7 @@ id_led_occup = 	 32768
 id_sw_all = 	    255
 id_sw_allLimits =	3840
 id_all =			4095
-id_ignoreLimitsSwitches = 0.
-
+id_ignoreLimitsSwitches = 0
 if ignoreLimitsSwitches:
     id_ignoreLimitsSwitches = id_sw_allLimits
     
@@ -98,8 +99,7 @@ OFF = True
 UP = True
 DN = False
 
-ledFreq = 1000
-duty_cycle = 10 # Between 0 - 100 %
+
 
 
 

@@ -1,5 +1,5 @@
 # version = 2.0.7.17
-
+import config
 from secrets import *
 from config import *
 import network
@@ -44,23 +44,13 @@ def printF(msg, msg2 = "", msg3 = "", msg4 = "", msg5 = "", msg6 = ""):
     formatted_time = "{:02}/{:02}/{:02} {:02}:{:02}:{:02}".format(ptm[0], ptm[1], ptm[2], ptm[3], ptm[4], ptm[5])
     mssg = "{}: {}{}{}{}{}{}"
     strng = mssg.format(formatted_time, msg, msg2, msg3, msg4, msg5, msg6)
-    if enableLogging:
+    if config.enableLogging:
         print(strng)
-    if enableFileLog:
-        f = open(logFilename, "a")
+    if config.enableFileLog:
+        f = open(config.logFilename, "a")
         f.write(strng + "\n")
         f.close()
         
-def Blink(led, duration = 10):
-    tmm = time.ticks_ms()
-    orig = led_occup.value()
-    while time.ticks_ms() - tmm < (duration * 1000):
-        tmm2 = time.ticks_ms()
-        while time.ticks_ms() - tmm2 < (1000):
-            led_occup.toggle()
-            time.sleep(.100)
-    led_occup.value(orig)
-    
 def RunSeconds(startTick, nowTick, precision = 2):
     return round((nowTick - startTick) / 1000, precision)
 
@@ -82,16 +72,12 @@ def Check_Button_Press():
     # Controller switches...    
     if sw_Up.value() == 1:
         ret = id_sw_Up 			# 1, Logic up
-        
     if sw_Up_2.value() == 1:        
         ret += id_sw_Up2 		# 2, Logic down
-        
     if sw_Dn.value() == 1:
-        ret += id_sw_Dn 			# 4, Logic up, bank 2
-        
+        ret += id_sw_Dn 		# 4, Logic up, bank 2
     if sw_Dn_2.value() == 1:        
         ret += id_sw_Dn2 		# 8, Logic down ,bank 2
-        
     if sw_Main_Up.value() == 1:
         ret += id_sw_Main_Up 	# 16, Main up
     if sw_Main_Up2.value() == 1:
@@ -108,20 +94,9 @@ def Check_Button_Press():
     if sw_Upper.value() == 0:
         ret += id_sw_upper 		# 512, Limit switch 'Upper'
     if sw_ReclHome.value() == 0:
-        ret += id_sw_reclHome 		# 1024, Limit switch 'Lower'
+        ret += id_sw_reclHome 	# 1024, Limit switch 'Lower'
     if sw_Occup.value() == 0:
         ret += id_sw_occup 		# 2048, Limit switch 'Occupancy'
-
-    # LED status...
-#     if led_home.value() == 1:
-#         ret += id_led_home  		# 4096, Limit switch 'Home'
-#     if led_upper.value() == 1:
-#         ret += id_led_upper 		# 8192, Limit switch 'Upper'
-#     if led_lower.value() == 1:
-#         ret += id_led_lower 		# 16384, Limit switch 'Lower'
-#     if led_occup.value() == 1:
-#         ret += id_led_occup 		# 32768, Limit switch 'Occupancy'    
-    
     return ret
 
 def SetBinString(spacer = "", binValue = 0, strString = ""):
@@ -179,13 +154,6 @@ def Wait_Time(seconds, spc = 1, watchedBin = 0, checkRunTime = False):
        watchedBinStr = watchedBinStr.rstrip(lf)        
     
     while exitReason == "":
-#         if round(tm_Dn_Runtime, 2) > tm_failSafeSeconds: # 60 second failsafe
-#             sw_Up.value(OFF)
-#             sw_Dn.value(OFF)
-#             rly_Up.value(OFF)
-#             rly_Dn.value(OFF)
-#             exitReason = " wait -> Complete FAILSAFE abort"
-
         if checkRunTime == True:
             if abs(tm_Dn_Runtime) - RunSeconds(wtm, time.ticks_ms()) <= 0:
                 exitReason = "tm_Dn_Runtime reached 0"
@@ -204,7 +172,7 @@ def Wait_Time(seconds, spc = 1, watchedBin = 0, checkRunTime = False):
     printF(spacer + "Complete wait time = ", str(RunSeconds(wtm, time.ticks_ms())), " seconds - Returning to caller")
     once = False
     
-    return exitReason + "," + str(RunSeconds(wtm, time.ticks_ms())) #== "Time (True)"
+    return exitReason + "," + str(RunSeconds(wtm, time.ticks_ms()))
 
 def Up_To_Out(spc = 1):
     spacer = Space(spc) + "topToHome -> "
@@ -236,11 +204,10 @@ def Up_To_Out(spc = 1):
     else:
 ## ----- TopWait -----
         led_occup.on()
-        #_thread.start_new_thread(Blink, (tm_top_wait+1,tm_top_wait))
         printF(spacer, str(tm_top_wait) + " second wait")
         result = Wait_Time(tm_top_wait, spc + 1, id_all - id_sw_reclHome - id_sw_riseHome).strip()
         resultStr = result.split(',')[0]
-        #resultVal = result.split(',')[1]
+
         led_occup.off()
         if resultStr != "Time (True)":
             printF(spacer, "Out_To_Home TopWait interrupt")
@@ -255,8 +222,10 @@ def Up_To_Out(spc = 1):
 def Down_To_Home(spc = 1, duration = float(0.0)):
     spacer = Space(spc) + "downToHome -> "
     aborted = False
-    rly_Dn.value(ON)
-    sec = abs(tm_Dn_Runtime) #float(tm_home_to_out) + tm_Dn_Runtime
+    config.rly_Dn.value(ON)
+    sec=float(0)
+    sec = config.tm_Dn_Runtime #float(tm_home_to_out) + tm_Dn_Runtim
+
     if duration > 0.0:
         sec = duration
     printF(spacer, "rly_Dn ON")
@@ -269,10 +238,9 @@ def Down_To_Home(spc = 1, duration = float(0.0)):
     rly_Dn.value(OFF)
     printF(spacer, "rly_Dn OFF")
     
-    if sw_RiseHome.value() == ON:
-        tm_Dn_Runtime = 0
+    if config.sw_RiseHome.value() == ON:
         printF(spacer, ": complete. At home")
-        tm_Dn_Runtime = 0.0
+        #config.tm_Dn_Runtime = 0.0
     else:
         if resultStr == "Time (True)" or resultStr == "tm_Dn_Runtime reached 0": #resultStr == "sw_RiseHome interrupt":
             printF(spacer, "Dn timeout reached: ", str(resultVal), ' seconds without home interrupt')
@@ -280,9 +248,9 @@ def Down_To_Home(spc = 1, duration = float(0.0)):
         else:
             printF(spacer, resultStr, " interrupt detected")
             #runTime = float(resultVal)
-        tm_Dn_Runtime += float(resultVal) + 0.8
+        #config.tm_Dn_Runtime += float(resultVal) + 0.8
             
-    printF(spacer + " EXIT: Returning to caller: " + str(tm_Dn_Runtime))
+    printF(spacer + " EXIT: Returning to caller: " + str(config.tm_Dn_Runtime))
     return result
                            
 # def SelfCheck():
