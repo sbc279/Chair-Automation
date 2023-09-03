@@ -1,41 +1,13 @@
-# version = 2.0.7.17
-import config
+# version = 2.0.8.31
+
 from secrets import *
 from config import *
-import network
+#import network
 import time
-# import _thread
 
-def do_connect(ssid=secrets['ssid'],psk=secrets['password']):
-    wlan = network.WLAN(network.STA_IF)
-    wlan.active(True)
-    wlan.connect(ssid, psk)
-    printF("Establishing Internet connectivity via the \""+ secrets['ssid']+ "\" access point...")
-    # Wait for connect or fail
-    wait = 10
-    while wait > 0:
-        if wlan.status() < 0 or wlan.status() >= 3:
-            break
-        wait -= 1
-        time.sleep(1)
- 
-    # Handle connection error
-    if wlan.status() != 3:
-        printF('Connectivity failed. No Internet connection')
-        printF('Attempting to run without it. Date ranges will be incorrect.')
-        printF('Please check the credentials in the file \"secrets.py\"')
-        return '0'
-        #raise RuntimeError('WIFi connection failed')
-    else:
-        printF(secrets['ssid'], ' WiFi connection established')
-        ip=wlan.ifconfig()[0]
-        printF('Details: ', wlan.ifconfig())
-        return ip
- 
 def init_pins(Pin):
     for x in range(28):
          Pin(x).init()
-
 
 def printF(msg, msg2 = "", msg3 = "", msg4 = "", msg5 = "", msg6 = ""):
     UTC_OFFSET = -5 * 60 * 60
@@ -44,10 +16,10 @@ def printF(msg, msg2 = "", msg3 = "", msg4 = "", msg5 = "", msg6 = ""):
     formatted_time = "{:02}/{:02}/{:02} {:02}:{:02}:{:02}".format(ptm[0], ptm[1], ptm[2], ptm[3], ptm[4], ptm[5])
     mssg = "{}: {}{}{}{}{}{}"
     strng = mssg.format(formatted_time, msg, msg2, msg3, msg4, msg5, msg6)
-    if config.enableLogging:
+    if enableLogging:
         print(strng)
-    if config.enableFileLog:
-        f = open(config.logFilename, "a")
+    if enableFileLog:
+        f = open(logFilename, "a")
         f.write(strng + "\n")
         f.close()
         
@@ -88,7 +60,6 @@ def Check_Button_Press():
         ret += id_sw_Main_Dn2 	# 128, Main down, bank 2
     
     # Limit switches...
-    #if not  id_ignoreLimitsSwitches:
     if sw_RiseHome.value() == 0:
         ret += id_sw_riseHome  	# 256, Limit switch rise 'Home'
     if sw_Upper.value() == 0:
@@ -145,7 +116,7 @@ def Wait_Time(seconds, spc = 1, watchedBin = 0, checkRunTime = False):
     if watchedBin > 0:
         watchedBinStr = SetBinString("\t\t" , watchedBin, " edge detection is being monitored" + lf)
 
-    printF(spacer, "Watched Edge Detection: " + str(watchedBin)) #lf + watchedBinStr)
+    printF(spacer, "Watched Edge Detection: " + str(watchedBin))
     printF(spacer, "Adjusted Wait Time: ", str(seconds) + " second", IsPlural(seconds)) 
     if checkRunTime == True:
         watchedBinStr += spacer + "tm_Dn_Runtime is being monitored" + lf
@@ -174,21 +145,21 @@ def Wait_Time(seconds, spc = 1, watchedBin = 0, checkRunTime = False):
     
     return exitReason + "," + str(RunSeconds(wtm, time.ticks_ms()))
 
-def Up_To_Out(spc = 1):
+def Up_To_Out(spc = 1, Dn_Runtime = 0):
     spacer = Space(spc) + "topToHome -> "
     rly_Up.value(ON)
-    printF(spacer + "Up_To_Out() activated")
+    printF(spacer + "Up_To_Out() activated.  tm_Dn_Runtime = ", str(tm_Dn_Runtime))
     printF(spacer + "rly_Up ON")
     
 ## ----- Go UP -----
     
-    if sw_RiseHome.value() == OFF:
-        tm_temp = tm_home_to_out - abs(tm_Dn_Runtime)
+    if sw_RiseHome.value() == ON:
+        tm_temp = tm_home_to_out - Dn_Runtime
     else:
         tm_temp = tm_home_to_out
 
     printF(spacer + "Waiting " + str(tm_temp) + " seconds")
-    result = Wait_Time(tm_temp, spc + 1, id_all - id_sw_riseHome - id_sw_reclHome) # - id_sw_reclHome)
+    result = Wait_Time(tm_temp, spc + 1, id_all - id_sw_riseHome - id_sw_reclHome)
 
     printF(result)
     resultStr = result.split(',')[0]
@@ -203,15 +174,24 @@ def Up_To_Out(spc = 1):
         return result
     else:
 ## ----- TopWait -----
-        led_occup.on()
+        
+        # Manually turn on the LED's
+        led_occup.duty_u16(brightness_NormIntensityLed)
+        led_upper.duty_u16(brightness_NormIntensityLed)
+        
         printF(spacer, str(tm_top_wait) + " second wait")
         result = Wait_Time(tm_top_wait, spc + 1, id_all - id_sw_reclHome - id_sw_riseHome).strip()
         resultStr = result.split(',')[0]
 
-        led_occup.off()
+        # Manually turn off the LED's
+        led_occup.duty_u16(0)
+        led_upper.duty_u16(0)
+        # The relay interrupt will resume LED control from here
+        
         if resultStr != "Time (True)":
             printF(spacer, "Out_To_Home TopWait interrupt")
         else:
+            
 ## ----- Go DOWN -----
             printF(spacer, "TopWait complete")
             result = Down_To_Home(spc + 1, tm_temp)
@@ -221,104 +201,47 @@ def Up_To_Out(spc = 1):
 
 def Down_To_Home(spc = 1, duration = float(0.0)):
     spacer = Space(spc) + "downToHome -> "
-    aborted = False
-    config.rly_Dn.value(ON)
-    sec=float(0)
-    sec = config.tm_Dn_Runtime #float(tm_home_to_out) + tm_Dn_Runtim
-
-    if duration > 0.0:
-        sec = duration
+    rly_Dn.value(ON)
     printF(spacer, "rly_Dn ON")
-    printF(spacer, "tm_Dn_Runtime = " + str(sec))
-    result = Wait_Time(sec, spc + 1, id_all - id_sw_reclHome, False)
+    printF(spacer, "tm_Dn_Runtime = " + str(duration))
 
+    result = Wait_Time(duration, spc + 1, id_all - id_sw_riseHome, False)
     resultStr = result.split(',')[0]
     resultVal = result.split(',')[1]
 
     rly_Dn.value(OFF)
     printF(spacer, "rly_Dn OFF")
     
-    if config.sw_RiseHome.value() == ON:
+    if sw_RiseHome.value() == ON:
         printF(spacer, ": complete. At home")
-        #config.tm_Dn_Runtime = 0.0
     else:
-        if resultStr == "Time (True)" or resultStr == "tm_Dn_Runtime reached 0": #resultStr == "sw_RiseHome interrupt":
+        if resultStr == "Time (True)" or resultStr == "tm_Dn_Runtime reached 0": 
             printF(spacer, "Dn timeout reached: ", str(resultVal), ' seconds without home interrupt')
-            #tm_Dn_Runtime = 0.0
         else:
             printF(spacer, resultStr, " interrupt detected")
-            #runTime = float(resultVal)
-        #config.tm_Dn_Runtime += float(resultVal) + 0.8
             
-    printF(spacer + " EXIT: Returning to caller: " + str(config.tm_Dn_Runtime))
+    printF(spacer + " EXIT: Returning to caller: " + str(resultVal))
     return result
-                           
-# def SelfCheck():
-#     ledTime = float(0.105)
-#     
-#     
-#     #time.sleep(ledTime)
-#     
-#     
-#     #time.sleep(ledTime)
-#     led_upper.on()
-#     led_occup.on()
-#     led_recl.on()
-#     #time.sleep(ledTime)
-#     led_home.on()
-#     
-#     time.sleep(.5)
-#     
-#     led_home.off()
-#     time.sleep(ledTime)
-#     led_recl.off()
-#     time.sleep(ledTime)
-#     led_occup.off()    
-#     
-#     led_upper.off()
-#     time.sleep(ledTime)
-# 
-# #     
-# #     time.sleep(ledTime)
-# #     led_occup.off()
-#     time.sleep(ledTime)
-#     #ErrorFlash() # not really an error
 
-def ErrorFlash(id = 0):
-    old_Occ = led_occup.value()
-    old_Low = led_recl.value()
-    old_Hi = led_upper.value()
-    old_Home = led_home.value()
+def SelfCheck():
+    ledTime = float(0.08)
     
-    led_occup.off()
-    led_recl.off()
-    led_upper.off()
-    led_home.off()
+    led_upper.duty_u16(brightness_NormIntensityLed)
+    time.sleep(ledTime)
+    led_occup.duty_u16(brightness_NormIntensityLed)
+    time.sleep(ledTime)
+    led_recl.duty_u16(brightness_NormIntensityLed)
+    time.sleep(ledTime)
+    led_home.duty_u16(brightness_NormIntensityLed)
     
-    for x in [1, 2, 3]:
-        led_recl.toggle()
-        led_occup.toggle()
-        led_upper.toggle()
-        led_home.toggle()
-        time.sleep(.1)
-
-    if id > 0:
-        for x in [1, 2, 3]:
-            if id & id_sw_reclHome:
-                led_recl.toggle()
-            if id & id_sw_occup:
-                led_occup.toggle()                
-            if id & id_sw_upper:
-                led_upper.toggle()
-            if id & id_sw_RiseHome:
-                led_home.toggle()
-            time.sleep(.5)
-        
-    led_occup.value(old_Occ)
-    led_recl.value(old_Low)
-    led_upper.value(old_Hi)
-    led_home.value(old_Home)
-
-        
-     
+    time.sleep(ledTime)
+    
+    led_upper.duty_u16(0)
+    time.sleep(ledTime)
+    led_occup.duty_u16(0)
+    time.sleep(ledTime)
+    led_recl.duty_u16(0)
+    time.sleep(ledTime)
+    led_home.duty_u16(0)
+    time.sleep(ledTime)
 
