@@ -1,4 +1,4 @@
-# version = 2.0.8.31
+# version = 2.0.10.08
 
 from secrets import *
 from config import *
@@ -42,32 +42,32 @@ def Check_Button_Press():
     ret = 0
         
     # Controller switches...    
-    if sw_Up.value() == 1:
-        ret = id_sw_Up 			# 1, Logic up
-    if sw_Up_2.value() == 1:        
-        ret += id_sw_Up2 		# 2, Logic down
-    if sw_Dn.value() == 1:
-        ret += id_sw_Dn 		# 4, Logic up, bank 2
-    if sw_Dn_2.value() == 1:        
-        ret += id_sw_Dn2 		# 8, Logic down ,bank 2
-    if sw_Main_Up.value() == 1:
-        ret += id_sw_Main_Up 	# 16, Main up
-    if sw_Main_Up2.value() == 1:
-        ret += id_sw_Main_Up2 	# 32, Main down
-    if sw_Main_Dn.value() == 1:
-        ret += id_sw_Main_Dn 	# 64, Main up, bank 2
-    if sw_Main_Dn2.value() == 1:
-        ret += id_sw_Main_Dn2 	# 128, Main down, bank 2
+    if sw_Up.value() == 1:      # 1, Logic up
+        ret = id_sw_Up 			
+    if sw_Up_2.value() == 1:    # 2, Logic up, bank 2
+        ret += id_sw_Up2 		
+    if sw_Dn.value() == 1:      # 4, Logic down
+        ret += id_sw_Dn 		
+    if sw_Dn_2.value() == 1:    # 8, Logic down ,bank 2    
+        ret += id_sw_Dn2 		
+    if sw_Main_Up.value() == 1: # 32, Main up
+        ret += id_sw_Main_Up 	
+    if sw_Main_Up2.value() == 1:# 64, Main up, bank 2
+        ret += id_sw_Main_Up2 	
+    if sw_Main_Dn.value() == 1: # 16, Main down
+        ret += id_sw_Main_Dn 	
+    if sw_Main_Dn2.value() == 1:# 128, Main down, bank 2
+        ret += id_sw_Main_Dn2 	
     
     # Limit switches...
     if sw_RiseHome.value() == 0:
         ret += id_sw_riseHome  	# 256, Limit switch rise 'Home'
-    if sw_Upper.value() == 0:
-        ret += id_sw_upper 		# 512, Limit switch 'Upper'
+#     if sw_Upper.value() == 0:
+#         ret += id_sw_upper 		# 512, Limit switch 'Upper'
     if sw_ReclHome.value() == 0:
         ret += id_sw_reclHome 	# 1024, Limit switch 'Lower'
-    if sw_Occup.value() == 0:
-        ret += id_sw_occup 		# 2048, Limit switch 'Occupancy'
+#     if sw_Occup.value() == 0:
+#         ret += id_sw_occup 		# 2048, Limit switch 'Occupancy'
     return ret
 
 def SetBinString(spacer = "", binValue = 0, strString = ""):
@@ -204,8 +204,10 @@ def Down_To_Home(spc = 1, duration = float(0.0)):
     rly_Dn.value(ON)
     printF(spacer, "rly_Dn ON")
     printF(spacer, "tm_Dn_Runtime = " + str(duration))
-
-    result = Wait_Time(duration, spc + 1, id_all - id_sw_riseHome, False)
+    ignorer = 0
+    if id_sw_reclHome:
+        ignorer = id_sw_reclHome   
+    result = Wait_Time(duration, spc + 1, id_all - ignorer, False)
     resultStr = result.split(',')[0]
     resultVal = result.split(',')[1]
 
@@ -244,4 +246,3 @@ def SelfCheck():
     time.sleep(ledTime)
     led_home.duty_u16(0)
     time.sleep(ledTime)
-
