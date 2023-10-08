@@ -1,4 +1,4 @@
-# version = 2.0.8.31
+# version = 2.0.10.08
 
 from machine import Pin, PWM, Timer
 import micropython
@@ -21,8 +21,8 @@ tm = float(0.0)
 
 #once = False
 print("main.py IPL: (chair) startup  BETA version " + version + "\n")
-if enableWiFi:
-    ip = do_connect()
+#if enableWiFi:
+#    ip = do_connect()
 
 # up relay
 def irq_rly_Up(p):
@@ -82,16 +82,21 @@ UTC_OFFSET = -5 * 60 * 60   # change the '-5' according to your time zone
 actual_time = time.localtime(time.ticks_ms() + UTC_OFFSET)
 tm_Dn_Runtime = 0
 
-def Is_Home(runTime, mute = False):
-    runTime = float("%.2f" % runTime)
-
-    if sw_ReclHome.value() == is_ON or sw_ReclHome.value() == is_OFF:
+def Is_Home(mute = False):
+    printF("sw_RiseHome: ",str(sw_RiseHome.value() == is_ON))
+    printF("sw_ReclHome: ",str(sw_ReclHome.value() == is_ON),"\n")
+    if sw_RiseHome.value() == is_OFF or sw_ReclHome.value() == is_OFF:
         if not mute:
-            printF("main -> ", "sw_RiseHome NOT at Home position.")
-            tm_Dn_Runtime = (float("%.2f" % runTime))
-            return False
+            if sw_RiseHome.value() == is_OFF and sw_ReclHome.value() == is_OFF:
+                printF("main -> ", "ERROR! Both sw_RclnHome & sw_RclnHome are open!")
+                return False
+            if sw_ReclHome.value() == is_OFF:
+                printF("main -> ", "sw_RclnHome NOT at Home position.")
+            else:
+                printF("main -> ", "sw_RiseHome NOT at Home position.")
+        return False
     else:
-        tm_Dn_Runtime = 0
+        config.tm_Dn_Runtime = 0
         if not mute:
             printF("main -> ", "At Home position.")
         return True
@@ -122,9 +127,9 @@ print("""
 
 printF("*started*")
 
-SelfCheck()
+#SelfCheck()
 
-Is_Home(0)
+Is_Home()
 
 print("")
 
@@ -132,7 +137,7 @@ try:
     while True:
            
  # Logic UP switch...
-        if sw_Up.value() == 1:
+        if sw_Up.value() == is_OFF:
             SwitchDebounce()
             result = ""
             printF("------------------------- UP Procedure Started -------------------------")
@@ -150,9 +155,9 @@ try:
                 tm = time.ticks_ms()
                 rly_Up.value(is_ON)
                 ignorer = id_sw_riseHome
-                if use_sw_ReclHome:
-                    ignorer = id_sw_reclHome
-                result = Wait_Time(tm_down_step, 1, id_all - ignorer, False)
+                if use_sw_RiseHome:
+                    ignorer = id_sw_riseHome                
+                result = Wait_Time(tm_down_step + 2, 1, id_all - ignorer, False)
                 resultStr = result.split(',')[0]
                 resultVal = result.split(',')[1]
                 printF("main -> ", "rly_Up is_OFF")
@@ -161,11 +166,11 @@ try:
                 if resultStr.find("sw_reclHome"):
                     tm_Dn_Runtime -= 0
                     printF( "main -> sw_reclHome interrupt")
-            Is_Home(tm_Dn_Runtime)
+            Is_Home()
             printF("------------------------- UP Procedure Completed -------------------------\n")
             SwitchDebounce()
             
-# Logic DN switch...
+# Logic DN switch.../
         if sw_Dn.value() == 1 :
             SwitchDebounce()
             result = ""
@@ -176,7 +181,7 @@ try:
                 printF("main -> 2:calling Down_To_Home()")
                 tm = time.ticks_ms()
 
-                result = Down_To_Home(1, abs(tm_Dn_Runtime))
+                result = Down_To_Home(1, tm_home_to_out)
                 resultStr = result.split(',')[0]
                 resultVal = result.split(',')[1]
                 rly_Dn.value(is_OFF)
@@ -191,7 +196,7 @@ try:
                 tm_Dn_Runtime += float(resultVal)
                 rly_Dn.value(is_OFF)
                 printF("main -> ", resultStr)
-            Is_Home(tm_Dn_Runtime)
+            Is_Home()
             printF("------------------------- DOWN Procedure Completed -------------------------\n")
             SwitchDebounce()
             
@@ -212,7 +217,8 @@ try:
             tm_Dn_Runtime = float("%.2f" % tm_Dn_Runtime)
             printF("main -> ", "sw_Main_Up released (", str(float("%.2f" % secs)), " seconds, Total = ", str(tm_Dn_Runtime), ")")
             onceUp = False
-
+            Is_Home()
+            
 # Main DN switch...         
         while Check_Button_Press() & id_sw_Main_Dn + id_sw_Main_Dn2 + id_sw_Dn2:
             if not onceDn:
@@ -230,14 +236,15 @@ try:
             tm_Dn_Runtime = float("%.2f" % tm_Dn_Runtime)
             printF("main -> ", "sw_Main_Dn released (", str(float("%.2f" % secs)), " seconds, Total = ", str(tm_Dn_Runtime), ")")  
             onceDn = False
-
-# Failsafe...
-        if (rly_Up.value() == ON or rly_Dn.value() == ON) and RunSeconds(tm, time.ticks_ms()) > tm_failSafeSeconds:
-            rly_Up.value(is_OFF)
-            rly_Dn.value(is_OFF)
-            printF("Main -> FAILSAFE TIMEOUT: ", str(tm_failSafeSeconds), "second abort")
-        
-        time.sleep(.1)
+            Is_Home()
+            
+ # Failsafe...
+         if (rly_Up.value() == ON or rly_Dn.value() == ON) and RunSeconds(tm, time.ticks_ms()) > tm_failSafeSeconds:
+             rly_Up.value(is_OFF)
+             rly_Dn.value(is_OFF)
+             printF("Main -> FAILSAFE TIMEOUT: ", str(tm_failSafeSeconds), "second abort")
+         
+         time.sleep(.1)
         
 # ^^^^^^^^^^^^^^^^^^ Loop point ^^^^^^^^^^^^^^^^^^
 
@@ -248,15 +255,15 @@ except KeyboardInterrupt:
     rly_Dn.value(is_OFF)
     printF("------------- main.py Exiting   (c)2023 CRAVER Engineering -------------")
   
-# except Exception as Argument:  
-#     # this catches ALL other exceptions including errors.  
-#     # You won't get any error messages for debugging  
-#     # so only use it once your code is working
-#     rly_Up.value(is_OFF)
-#     rly_Dn.value(is_OFF)
-#     f = open("Errors.txt", "a")
-#     f.write("ERROR: " + str(Argument) + " \nSTerminating main.py \n")
-#     f.close()
+except Exception as Argument:  
+    # this catches ALL other exceptions including errors.  
+    # You won't get any error messages for debugging  
+    # so only use it once your code is working
+    rly_Up.value(is_OFF)
+    rly_Dn.value(is_OFF)
+    f = open("Errors.txt", "a")
+    f.write("ERROR: " + str(Argument) + " \nSTerminating main.py \n")
+    f.close()
 
 finally:
 
@@ -266,4 +273,3 @@ finally:
     led_recl.deinit()
     led_home.deinit()
     led_occup.deinit()
-
