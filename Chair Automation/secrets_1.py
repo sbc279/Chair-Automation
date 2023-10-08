@@ -1,4 +1,4 @@
 secjrets = {
-'ssid': 'fromage',
-'password': '1kenwood',
+'ssid': 'xxxxx',
+'password': 'xxxxx',
 }
