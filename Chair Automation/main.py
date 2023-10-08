@@ -238,13 +238,13 @@ try:
             onceDn = False
             Is_Home()
             
- # Failsafe...
-         if (rly_Up.value() == ON or rly_Dn.value() == ON) and RunSeconds(tm, time.ticks_ms()) > tm_failSafeSeconds:
-             rly_Up.value(is_OFF)
-             rly_Dn.value(is_OFF)
-             printF("Main -> FAILSAFE TIMEOUT: ", str(tm_failSafeSeconds), "second abort")
+        # Failsafe...
+        if (rly_Up.value() == ON or rly_Dn.value() == ON) and RunSeconds(tm, time.ticks_ms()) > tm_failSafeSeconds:
+            rly_Up.value(is_OFF)
+            rly_Dn.value(is_OFF)
+            printF("Main -> FAILSAFE TIMEOUT: ", str(tm_failSafeSeconds), "second abort")
          
-         time.sleep(.1)
+        time.sleep(.1)
         
 # ^^^^^^^^^^^^^^^^^^ Loop point ^^^^^^^^^^^^^^^^^^
 
