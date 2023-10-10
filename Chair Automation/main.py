@@ -15,7 +15,7 @@ micropython.alloc_emergency_exception_buf(100)
 is_OFF = OFF
 is_ON = ON
 
-onceUp = False
+onceUp = False 
 onceDn = False
 tm = float(0.0)
 
