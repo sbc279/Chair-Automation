@@ -1,4 +1,4 @@
-# version = 2.0.10.10 
+# version = 2.0.10.10
 
 from machine import Pin, PWM, Timer
 import micropython
