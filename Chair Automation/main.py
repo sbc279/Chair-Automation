@@ -1,4 +1,4 @@
-# version = 2.0.10.08
+# version = 2.0.10.10
 
 from machine import Pin, PWM, Timer
 import micropython
@@ -27,51 +27,36 @@ print("main.py IPL: (chair) startup  BETA version " + version + "\n")
 # up relay
 def irq_rly_Up(p):
     if not p.value():
-        led_upper.duty_u16(brightness_NormIntensityLed)    
+        led_UP.duty_u16(brightness_NormIntensityLed)    
     else:
-        led_upper.duty_u16(0)
+        led_UP.duty_u16(0)
     
 # down relay
 def irq_rly_Dn(p):
     if not p.value():
-        led_occup.duty_u16(brightness_HighIntensityLed)    
+        led_DN.duty_u16(brightness_HighIntensityLed)    
     else:
-        led_occup.duty_u16(0)
+        led_DN.duty_u16(0)
         
 # home limit 
 def irq_sw_RiseHome(p):
     if not p.value():
-        led_home.duty_u16(brightness_NormIntensityLed)
+        led_riseHome.duty_u16(brightness_NormIntensityLed)
     else:
-        led_home.duty_u16(0)
+        led_riseHome.duty_u16(0)
       
 # recl limit
 def irq_sw_Recl(p):
     if not p.value():
-        led_recl.duty_u16(brightness_NormIntensityLed)
+        led_reclHome.duty_u16(brightness_NormIntensityLed)
     else:
-        led_recl.duty_u16(0)
+        led_reclHome.duty_u16(0)
     
-# occup limit    
-def irq_sw_Occup(p):
-    if not p.value():
-        pwm_occupLed.duty_u16(10000)
-    else:
-        pwm_occupLed.duty_u16(0)
-
-
-def irq_J9(p):
-    # Immediately remove J9's power...
-    plug_J9.value(is_OFF)
-    time.sleep(.5)
-    plug_J9.value(enableJ9)
-    
-sw_RiseHome.irq(lambda p:irq_sw_RiseHome(p)) 	# interrupt for led_Home
+   
+sw_RiseHome.irq(lambda p:irq_sw_RiseHome(p)) 	# interrupt for led_riseHome
 sw_ReclHome.irq(lambda p:irq_sw_Recl(p))   # interrupt for led_lower
 rly_Up.irq(lambda p:irq_rly_Up(p))		# interrupt for rly_Up
 rly_Dn.irq(lambda p:irq_rly_Dn(p))	 	# interrupt for rly_Dn
-sw_J9.irq(lambda p:irq_J9(p))			# interrupt for sw_J9
-
         
 def SwitchDebounce():
     while Check_Button_Press() & id_sw_all:
@@ -269,7 +254,7 @@ finally:
 
     rly_Up.value(is_OFF)
     rly_Dn.value(is_OFF)
-    led_upper.deinit()
-    led_recl.deinit()
-    led_home.deinit()
-    led_occup.deinit()
+    led_UP.deinit()
+    led_reclHome.deinit()
+    led_riseHome.deinit()
+    led_DN.deinit()
