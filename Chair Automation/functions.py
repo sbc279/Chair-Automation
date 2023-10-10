@@ -42,32 +42,32 @@ def Check_Button_Press():
     ret = 0
         
     # Controller switches...    
-    if sw_Up.value() == 1:      # 1, Logic up
+    if sw_Up.value() == OFF:      # 1, Logic up
         ret = id_sw_Up 			
-    if sw_Up_2.value() == 1:    # 2, Logic up, bank 2
+    if sw_Up_2.value() == OFF:    # 2, Logic up, bank 2
         ret += id_sw_Up2 		
-    if sw_Dn.value() == 1:      # 4, Logic down
+    if sw_Dn.value() == OFF:      # 4, Logic down
         ret += id_sw_Dn 		
-    if sw_Dn_2.value() == 1:    # 8, Logic down ,bank 2    
+    if sw_Dn_2.value() == OFF:    # 8, Logic down ,bank 2    
         ret += id_sw_Dn2 		
-    if sw_Main_Up.value() == 1: # 32, Main up
+    if sw_Main_Up.value() == OFF: # 32, Main up
         ret += id_sw_Main_Up 	
-    if sw_Main_Up2.value() == 1:# 64, Main up, bank 2
+    if sw_Main_Up2.value() == OFF:# 64, Main up, bank 2
         ret += id_sw_Main_Up2 	
-    if sw_Main_Dn.value() == 1: # 16, Main down
+    if sw_Main_Dn.value() == OFF: # 16, Main down
         ret += id_sw_Main_Dn 	
-    if sw_Main_Dn2.value() == 1:# 128, Main down, bank 2
+    if sw_Main_Dn2.value() == OFF:# 128, Main down, bank 2
         ret += id_sw_Main_Dn2 	
     
     # Limit switches...
     if sw_RiseHome.value() == 0:
         ret += id_sw_riseHome  	# 256, Limit switch rise 'Home'
-#     if sw_Upper.value() == 0:
-#         ret += id_sw_upper 		# 512, Limit switch 'Upper'
+    if sw_Upper.value() == 0:
+        ret += id_sw_upper 		# 512, Limit switch 'Upper'
     if sw_ReclHome.value() == 0:
         ret += id_sw_reclHome 	# 1024, Limit switch 'Lower'
-#     if sw_Occup.value() == 0:
-#         ret += id_sw_occup 		# 2048, Limit switch 'Occupancy'
+    if sw_Occup.value() == 0:
+        ret += id_sw_occup 		# 2048, Limit switch 'Occupancy'
     return ret
 
 def SetBinString(spacer = "", binValue = 0, strString = ""):
@@ -176,16 +176,16 @@ def Up_To_Out(spc = 1, Dn_Runtime = 0):
 ## ----- TopWait -----
         
         # Manually turn on the LED's
-        led_occup.duty_u16(brightness_NormIntensityLed)
-        led_upper.duty_u16(brightness_NormIntensityLed)
+        led_DN.duty_u16(brightness_NormIntensityLed)
+        led_UP.duty_u16(brightness_NormIntensityLed)
         
         printF(spacer, str(tm_top_wait) + " second wait")
         result = Wait_Time(tm_top_wait, spc + 1, id_all - id_sw_reclHome - id_sw_riseHome).strip()
         resultStr = result.split(',')[0]
 
         # Manually turn off the LED's
-        led_occup.duty_u16(0)
-        led_upper.duty_u16(0)
+        led_DN.duty_u16(0)
+        led_UP.duty_u16(0)
         # The relay interrupt will resume LED control from here
         
         if resultStr != "Time (True)":
@@ -228,21 +228,21 @@ def Down_To_Home(spc = 1, duration = float(0.0)):
 def SelfCheck():
     ledTime = float(0.08)
     
-    led_upper.duty_u16(brightness_NormIntensityLed)
+    led_UP.duty_u16(brightness_NormIntensityLed)
     time.sleep(ledTime)
-    led_occup.duty_u16(brightness_NormIntensityLed)
+    led_DN.duty_u16(brightness_NormIntensityLed)
     time.sleep(ledTime)
-    led_recl.duty_u16(brightness_NormIntensityLed)
+    led_reclHome.duty_u16(brightness_NormIntensityLed)
     time.sleep(ledTime)
-    led_home.duty_u16(brightness_NormIntensityLed)
+    led_riseHome.duty_u16(brightness_NormIntensityLed)
     
     time.sleep(ledTime)
     
-    led_upper.duty_u16(0)
+    led_UP.duty_u16(0)
     time.sleep(ledTime)
-    led_occup.duty_u16(0)
+    led_DN.duty_u16(0)
     time.sleep(ledTime)
-    led_recl.duty_u16(0)
+    led_reclHome.duty_u16(0)
     time.sleep(ledTime)
-    led_home.duty_u16(0)
+    led_riseHome.duty_u16(0)
     time.sleep(ledTime)
