@@ -1,9 +1,9 @@
+# Config.py version...
+version = "2.0.10.13"
+
+
 from machine import Pin, PWM
 import machine
-
-# version...
-version = "2.0.10.11"
-
 
 # Options...
 enableLogging = True
