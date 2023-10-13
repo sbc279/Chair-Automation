@@ -1,6 +1,7 @@
-# version = 2.0.10.10
+# version = 2.0.10.11
 
 from machine import Pin, PWM, Timer
+import sys
 import micropython
 import ntptime
 import rp2
@@ -21,9 +22,7 @@ tm = float(0.0)
 
 #once = False
 print("main.py IPL: (chair) startup  BETA version " + version + "\n")
-#if enableWiFi:
-#    ip = do_connect()
-
+    
 # up relay
 def irq_rly_Up(p):
     if not p.value():
@@ -85,8 +84,14 @@ def Is_Home(mute = False):
         if not mute:
             printF("main -> ", "At Home position.")
         return True
+    
+time.sleep(1)
+rly_Up(1)
+rly_Dn(1)
+time.sleep(.25)
+SelfCheck()
 
-print("""
+printF("""
 ------------------- Copyright 2023 CRAVER Engineering. -------------------
 
     Recliner Chair auxiliary controller experiment. This program is
@@ -107,12 +112,11 @@ print("""
     along with this program.
     If not, see <https://www.gnu.org/licenses/gpl-3.0.html#license-text>
  
-
 --------------------------------------------------------------------------\n""")
 
 printF("*started*")
 
-#SelfCheck()
+ShowOptions()
 
 Is_Home()
 
@@ -251,10 +255,8 @@ except Exception as Argument:
     f.close()
 
 finally:
-
-    rly_Up.value(is_OFF)
-    rly_Dn.value(is_OFF)
     led_UP.deinit()
     led_reclHome.deinit()
     led_riseHome.deinit()
     led_DN.deinit()
+
