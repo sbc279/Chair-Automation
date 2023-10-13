@@ -1,4 +1,5 @@
-# version = 2.0.10.11
+# Functions.py 
+# version = 2.0.10.13
 
 from secrets import *
 from config import *

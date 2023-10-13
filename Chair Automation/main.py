@@ -1,4 +1,5 @@
-# version = 2.0.10.11
+# Main.py
+# version = 2.0.10.13
 
 from machine import Pin, PWM, Timer
 import sys
@@ -68,11 +69,12 @@ tm_Dn_Runtime = 0
 
 def Is_Home(mute = False):
     printF("sw_RiseHome: ",str(sw_RiseHome.value() == is_ON))
-    printF("sw_ReclHome: ",str(sw_ReclHome.value() == is_ON),"\n")
+    printF("sw_ReclHome: ",str(sw_ReclHome.value() == is_ON))
     if sw_RiseHome.value() == is_OFF or sw_ReclHome.value() == is_OFF:
         if not mute:
             if sw_RiseHome.value() == is_OFF and sw_ReclHome.value() == is_OFF:
-                printF("main -> ", "ERROR! Both sw_RclnHome & sw_RclnHome are open!")
+                printF("main -> ", "IsHome() FORBIDDEN STATE: Both sw_RiseHome & sw_RclnHome are open.")
+                printF("main -> ", "IsHome()"," Please check your riseHome and reclHome switches and connections.")
                 return False
             if sw_ReclHome.value() == is_OFF:
                 printF("main -> ", "sw_RclnHome NOT at Home position.")
