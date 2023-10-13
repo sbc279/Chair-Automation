@@ -1,6 +1,8 @@
-# version = 2.0.10.10
+# Main.py
+# version = 2.0.10.13
 
 from machine import Pin, PWM, Timer
+import sys
 import micropython
 import ntptime
 import rp2
@@ -69,11 +71,12 @@ tm_Dn_Runtime = 0
 
 def Is_Home(mute = False):
     printF("sw_RiseHome: ",str(sw_RiseHome.value() == is_ON))
-    printF("sw_ReclHome: ",str(sw_ReclHome.value() == is_ON),"\n")
+    printF("sw_ReclHome: ",str(sw_ReclHome.value() == is_ON))
     if sw_RiseHome.value() == is_OFF or sw_ReclHome.value() == is_OFF:
         if not mute:
             if sw_RiseHome.value() == is_OFF and sw_ReclHome.value() == is_OFF:
-                printF("main -> ", "ERROR! Both sw_RclnHome & sw_RclnHome are open!")
+                printF("main -> ", "IsHome() FORBIDDEN STATE: Both sw_RiseHome & sw_RclnHome are open.")
+                printF("main -> ", "IsHome()"," Please check your riseHome and reclHome switches and connections.")
                 return False
             if sw_ReclHome.value() == is_OFF:
                 printF("main -> ", "sw_RclnHome NOT at Home position.")
@@ -85,8 +88,14 @@ def Is_Home(mute = False):
         if not mute:
             printF("main -> ", "At Home position.")
         return True
+    
+time.sleep(1)
+rly_Up(1)
+rly_Dn(1)
+time.sleep(.25)
+SelfCheck()
 
-print("""
+printF("""
 ------------------- Copyright 2023 CRAVER Engineering. -------------------
 
     Recliner Chair auxiliary controller experiment. This program is
@@ -107,12 +116,11 @@ print("""
     along with this program.
     If not, see <https://www.gnu.org/licenses/gpl-3.0.html#license-text>
  
-
 --------------------------------------------------------------------------\n""")
 
 printF("*started*")
 
-#SelfCheck()
+ShowOptions()
 
 Is_Home()
 
@@ -251,10 +259,8 @@ except Exception as Argument:
     f.close()
 
 finally:
-
-    rly_Up.value(is_OFF)
-    rly_Dn.value(is_OFF)
     led_UP.deinit()
     led_reclHome.deinit()
     led_riseHome.deinit()
     led_DN.deinit()
+

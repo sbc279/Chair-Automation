@@ -1,8 +1,9 @@
-# version = 2.0.10.10
+# Functions.py 
+# version = 2.0.10.13
 
 from secrets import *
 from config import *
-#import network
+import network
 import time
 
 def init_pins(Pin):
@@ -23,6 +24,32 @@ def printF(msg, msg2 = "", msg3 = "", msg4 = "", msg5 = "", msg6 = ""):
         f.write(strng + "\n")
         f.close()
         
+def do_connect(ssid=secrets['ssid'],psk=secrets['password']):
+    wlan = network.WLAN(network.STA_IF)
+    wlan.active(True)
+    wlan.connect(ssid, psk)
+    printF("Establishing Internet connectivity via the \""+ secrets['ssid']+ "\" access point...")
+    # Wait for connect or fail
+    wait = 10
+    while wait > 0:
+        if wlan.status() < 0 or wlan.status() >= 3:
+            break
+        wait -= 1
+        time.sleep(1)
+ 
+    # Handle connection error
+    if wlan.status() != 3:
+        printF('Connectivity failed. No Internet connection')
+        printF('Attempting to run without it. Date ranges will be incorrect.')
+        printF('Please check the credentials in the file \"secrets.py\"')
+        return '0'
+        #raise RuntimeError('WIFi connection failed')
+    else:
+        printF(secrets['ssid'], ' WiFi connection established')
+        ip=wlan.ifconfig()[0]
+        printF('Details: ', wlan.ifconfig())
+        return ip
+
 def RunSeconds(startTick, nowTick, precision = 2):
     return round((nowTick - startTick) / 1000, precision)
 
@@ -230,19 +257,48 @@ def SelfCheck():
     
     led_UP.duty_u16(brightness_NormIntensityLed)
     time.sleep(ledTime)
-    led_DN.duty_u16(brightness_NormIntensityLed)
-    time.sleep(ledTime)
     led_reclHome.duty_u16(brightness_NormIntensityLed)
     time.sleep(ledTime)
     led_riseHome.duty_u16(brightness_NormIntensityLed)
+    time.sleep(ledTime)
+    led_DN.duty_u16(brightness_NormIntensityLed)
+    time.sleep(ledTime)
+    
     
     time.sleep(ledTime)
     
-    led_UP.duty_u16(0)
-    time.sleep(ledTime)
     led_DN.duty_u16(0)
-    time.sleep(ledTime)
-    led_reclHome.duty_u16(0)
     time.sleep(ledTime)
     led_riseHome.duty_u16(0)
     time.sleep(ledTime)
+    led_reclHome.duty_u16(0)
+    time.sleep(ledTime)
+    led_UP.duty_u16(0)
+    
+    time.sleep(ledTime)
+
+def ShowOptions():
+    if enableWiFi:
+        ip = do_connect()
+    else:
+        printF("WiFi is disabled")
+    if enableLogging:
+        printF("Screen logging is enabled")
+    else:
+        printF("Screen logging is disabled")
+
+    if enableFileLog:
+        printF("File logging is enabled: ", logFilename)
+    else:
+        printF("File Logging is disabled")
+
+    if use_sw_RiseHome:
+        printF("RiseHome is enabled")
+    else:
+        printF("RiseHome is disabled")
+
+    if use_sw_ReclHome:
+        printF("ReclHome is enabled")
+    else:
+        printF("ReclHome is disabled")    
+
