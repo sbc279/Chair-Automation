@@ -1,7 +1,7 @@
 # Functions.py 
-# version = 2.0.10.13
+# version = 2.0.10.23
 
-from secrets import *
+from secret import *
 from config import *
 import network
 import time
@@ -68,33 +68,37 @@ def Space(spc):
 def Check_Button_Press():
     ret = 0
         
-    # Controller switches...    
-    if sw_Up.value() == OFF:      # 1, Logic up
+    # Controller switches... (normally LO, pulling HI activates.)   
+    if sw_Up.value() == HI:      # 1, Logic up
         ret = id_sw_Up 			
-    if sw_Up_2.value() == OFF:    # 2, Logic up, bank 2
+    if sw_Up_2.value() == HI:    # 2, Logic up, bank 2
         ret += id_sw_Up2 		
-    if sw_Dn.value() == OFF:      # 4, Logic down
+    if sw_Dn.value() == HI:      # 4, Logic down
         ret += id_sw_Dn 		
-    if sw_Dn_2.value() == OFF:    # 8, Logic down ,bank 2    
-        ret += id_sw_Dn2 		
-    if sw_Main_Up.value() == OFF: # 32, Main up
-        ret += id_sw_Main_Up 	
-    if sw_Main_Up2.value() == OFF:# 64, Main up, bank 2
-        ret += id_sw_Main_Up2 	
-    if sw_Main_Dn.value() == OFF: # 16, Main down
-        ret += id_sw_Main_Dn 	
-    if sw_Main_Dn2.value() == OFF:# 128, Main down, bank 2
+    if sw_Dn_2.value() == HI:    # 8, Logic down ,bank 2    
+        ret += id_sw_Dn2
+        
+    
+    if sw_Main_Up.value() == HI: # 32, Main up
+        ret += id_sw_Main_Up
+    if sw_Main_Up2.value() == HI:# 64, Main up, bank 2
+        ret += id_sw_Main_Up2
+    if sw_Main_Dn.value() == HI: # 16, Main down
+        ret += id_sw_Main_Dn
+    if sw_Main_Dn2.value() == HI:# 128, Main down, bank 2
         ret += id_sw_Main_Dn2 	
     
-    # Limit switches...
-    if sw_RiseHome.value() == 0:
+    
+    
+    # Limit switches... (normally True)
+    if sw_RiseHome.value() == ON and use_sw_RiseHome :
         ret += id_sw_riseHome  	# 256, Limit switch rise 'Home'
-    if sw_Upper.value() == 0:
+    if sw_Upper.value() == ON and use_sw_Upper:
         ret += id_sw_upper 		# 512, Limit switch 'Upper'
-    if sw_ReclHome.value() == 0:
+    if sw_ReclHome.value() == ON and use_sw_ReclHome:
         ret += id_sw_reclHome 	# 1024, Limit switch 'Lower'
-    if sw_Occup.value() == 0:
-        ret += id_sw_occup 		# 2048, Limit switch 'Occupancy'
+    if sw_Lower.value() == ON and use_sw_Lower:
+        ret += id_sw_lower 		# 2048, Limit switch 'Occupancy'
     return ret
 
 def SetBinString(spacer = "", binValue = 0, strString = ""):
@@ -114,30 +118,33 @@ def SetBinString(spacer = "", binValue = 0, strString = ""):
     if binValue & id_sw_Main_Dn: #64
         binStr += spacer + "sw_Main_Dn" + strString    
     if binValue & id_sw_Main_Dn2: #128
-        binStr += spacer + "sw_Main_Dn2" + strString    
-    if binValue & id_sw_riseHome:  # 256
+        binStr += spacer + "sw_Main_Dn2" + strString  
+        
+    if (binValue & id_sw_riseHome) and use_sw_RiseHome:  # 256
         binStr += spacer + "sw_RiseHome" + strString
-    if binValue & id_sw_upper:  # 512
+        
+    if (binValue & id_sw_upper) and use_sw_Upper:  # 512
         binStr += spacer + "sw_Upper" + strString
-    if binValue & id_sw_reclHome:  # 1024
+        
+    if (binValue & id_sw_reclHome) and use_sw_ReclHome:  # 1024
         binStr += spacer + "sw_reclHome" + strString
-    if binValue & id_sw_occup:  # 2048
-        binStr += spacer + "sw_Occup" + strString
+        
+    if (binValue & id_sw_lower) and use_sw_Lower:  # 2048
+        binStr += spacer + "sw_Lower" + strString
     return binStr
                 
 def Wait_Time(seconds, spc = 1, watchedBin = 0, checkRunTime = False):
 
     # Compensate for PICO's latency
-    picoLatency = 0 #.11
+    picoLatency = .01
     
-    seconds = seconds - picoLatency
+    seconds = seconds + picoLatency
     spacer = Space(spc) + "wait -> "
     once = False
     wtm = time.ticks_ms()
     trigger = 0
     exitReason = ""
     complete = False
-    lf = "\n\t\t"
     watchedBinStr = "none"
 
     if watchedBin > 0:
@@ -174,8 +181,8 @@ def Wait_Time(seconds, spc = 1, watchedBin = 0, checkRunTime = False):
 
 def Up_To_Out(spc = 1, Dn_Runtime = 0):
     spacer = Space(spc) + "topToHome -> "
-    rly_Up.value(ON)
     printF(spacer + "Up_To_Out() activated.  tm_Dn_Runtime = ", str(tm_Dn_Runtime))
+    rly_Up.value(ON)
     printF(spacer + "rly_Up ON")
     
 ## ----- Go UP -----
@@ -232,8 +239,8 @@ def Down_To_Home(spc = 1, duration = float(0.0)):
     printF(spacer, "rly_Dn ON")
     printF(spacer, "tm_Dn_Runtime = " + str(duration))
     ignorer = 0
-    if id_sw_reclHome:
-        ignorer = id_sw_reclHome   
+    if use_sw_ReclHome and id_sw_reclHome:
+        ignorer = id_sw_reclHome 
     result = Wait_Time(duration, spc + 1, id_all - ignorer, False)
     resultStr = result.split(',')[0]
     resultVal = result.split(',')[1]
@@ -241,7 +248,7 @@ def Down_To_Home(spc = 1, duration = float(0.0)):
     rly_Dn.value(OFF)
     printF(spacer, "rly_Dn OFF")
     
-    if sw_RiseHome.value() == ON:
+    if use_sw_RiseHome and sw_RiseHome.value() == ON:
         printF(spacer, ": complete. At home")
     else:
         if resultStr == "Time (True)" or resultStr == "tm_Dn_Runtime reached 0": 
@@ -253,29 +260,23 @@ def Down_To_Home(spc = 1, duration = float(0.0)):
     return result
 
 def SelfCheck():
-    ledTime = float(0.08)
-    
+    ledTime = float(0.06)
     led_UP.duty_u16(brightness_NormIntensityLed)
     time.sleep(ledTime)
-    led_reclHome.duty_u16(brightness_NormIntensityLed)
+    led_reclHome.duty_u16(brightness_AltNormIntensityLed)
     time.sleep(ledTime)
     led_riseHome.duty_u16(brightness_NormIntensityLed)
     time.sleep(ledTime)
     led_DN.duty_u16(brightness_NormIntensityLed)
-    time.sleep(ledTime)
+    time.sleep(.25)
     
-    
-    time.sleep(ledTime)
-    
-    led_DN.duty_u16(0)
-    time.sleep(ledTime)
-    led_riseHome.duty_u16(0)
+    led_UP.duty_u16(0)
     time.sleep(ledTime)
     led_reclHome.duty_u16(0)
     time.sleep(ledTime)
-    led_UP.duty_u16(0)
-    
+    led_riseHome.duty_u16(0)
     time.sleep(ledTime)
+    led_DN.duty_u16(0)
 
 def ShowOptions():
     if enableWiFi:
