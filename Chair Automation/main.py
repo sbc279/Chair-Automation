@@ -1,11 +1,11 @@
 # Main.py
-# version = 2.0.10.13
+# version = 2.0.10.23
 
 from machine import Pin, PWM, Timer
-import sys
+#import sys
 import micropython
-import ntptime
-import rp2
+#import ntptime
+#import rp2
 import time
 import _thread
 from functions import *
@@ -13,9 +13,6 @@ from config import *
 import config
 
 micropython.alloc_emergency_exception_buf(100)																																																					
-
-is_OFF = OFF
-is_ON = ON
 
 onceUp = False 
 onceDn = False
@@ -41,7 +38,7 @@ def irq_rly_Dn(p):
 # home limit 
 def irq_sw_RiseHome(p):
     if not p.value():
-        led_riseHome.duty_u16(brightness_NormIntensityLed)
+        led_riseHome.duty_u16(brightness_AltNormIntensityLed)
     else:
         led_riseHome.duty_u16(0)
       
@@ -68,15 +65,17 @@ actual_time = time.localtime(time.ticks_ms() + UTC_OFFSET)
 tm_Dn_Runtime = 0
 
 def Is_Home(mute = False):
-    printF("sw_RiseHome: ",str(sw_RiseHome.value() == is_ON))
-    printF("sw_ReclHome: ",str(sw_ReclHome.value() == is_ON))
-    if sw_RiseHome.value() == is_OFF or sw_ReclHome.value() == is_OFF:
+    if not mute:
+        printF("sw_RiseHome: ",str(sw_RiseHome.value() == ON))
+        printF("sw_ReclHome: ",str(sw_ReclHome.value() == ON))
+        
+    if sw_RiseHome.value() == OFF or sw_ReclHome.value() == OFF:
         if not mute:
-            if sw_RiseHome.value() == is_OFF and sw_ReclHome.value() == is_OFF:
+            if sw_RiseHome.value() == OFF and sw_ReclHome.value() == OFF:
                 printF("main -> ", "IsHome() FORBIDDEN STATE: Both sw_RiseHome & sw_RclnHome are open.")
                 printF("main -> ", "IsHome()"," Please check your riseHome and reclHome switches and connections.")
                 return False
-            if sw_ReclHome.value() == is_OFF:
+            if sw_ReclHome.value() == OFF:
                 printF("main -> ", "sw_RclnHome NOT at Home position.")
             else:
                 printF("main -> ", "sw_RiseHome NOT at Home position.")
@@ -128,31 +127,32 @@ try:
     while True:
            
  # Logic UP switch...
-        if sw_Up.value() == is_OFF:
+        if sw_Up.value() == True:
             SwitchDebounce()
             result = ""
-            printF("------------------------- UP Procedure Started -------------------------")
-            if sw_ReclHome.value() == is_ON or sw_RiseHome.value() == is_OFF:
+            if sw_ReclHome.value() == ON or sw_RiseHome.value() == OFF:
+                printF("------------------------- UP Procedure Started -------------------------")
                 # up 'n out
                 tm = time.ticks_ms()
-                rly_Up.value(is_ON)
+                rly_Up.value(ON)
                 result = Up_To_Out(tm_Dn_Runtime) 
                 resultStr = result.split(',')[0]
                 resultVal = result.split(',')[1]
                 #tm_Dn_Runtime -= float(resultVal)
                 printF("main -> ", resultStr.replace("  wait -> ", ""))
             else:
+                printF("----------------------- LOGIC UP Started -------------------------")
                 printF("main -> ", "rly_Up ON")
                 tm = time.ticks_ms()
-                rly_Up.value(is_ON)
+                rly_Up.value(ON)
                 ignorer = id_sw_riseHome
                 if use_sw_RiseHome:
                     ignorer = id_sw_riseHome                
                 result = Wait_Time(tm_down_step + 2, 1, id_all - ignorer, False)
                 resultStr = result.split(',')[0]
                 resultVal = result.split(',')[1]
-                printF("main -> ", "rly_Up is_OFF")
-                rly_Up.value(is_OFF)
+                printF("main -> ", "rly_Up OFF")
+                rly_Up.value(OFF)
                 tm_Dn_Runtime -= float(resultVal)
                 if resultStr.find("sw_reclHome"):
                     tm_Dn_Runtime -= 0
@@ -161,48 +161,48 @@ try:
             printF("------------------------- UP Procedure Completed -------------------------\n")
             SwitchDebounce()
             
-# Logic DN switch.../
-        if sw_Dn.value() == 1 :
+# Logic DN switch...
+        if sw_Dn.value() == True:
             SwitchDebounce()
             result = ""
             resultStr = ""
             resultVal = float(0.0)
             printF("main -> ", "1:sw_Dn pressed")
-            if sw_RiseHome.value() == is_OFF:
+            if sw_RiseHome.value() == OFF:
                 printF("main -> 2:calling Down_To_Home()")
                 tm = time.ticks_ms()
 
                 result = Down_To_Home(1, tm_home_to_out)
                 resultStr = result.split(',')[0]
                 resultVal = result.split(',')[1]
-                rly_Dn.value(is_OFF)
+                rly_Dn.value(OFF)
                 tm_Dn_Runtime += float(resultVal) 
             else:
-                rly_Dn.value(is_ON)
+                rly_Dn.value(ON)
                 printF("main -> ", "3:rly_Dn ON")
                 tm = time.ticks_ms()
                 result = Wait_Time(tm_down_step, 1, id_sw_all)
                 resultStr = result.split(',')[0]
                 resultVal = result.split(',')[1]
                 tm_Dn_Runtime += float(resultVal)
-                rly_Dn.value(is_OFF)
+                rly_Dn.value(OFF)
                 printF("main -> ", resultStr)
             Is_Home()
             printF("------------------------- DOWN Procedure Completed -------------------------\n")
             SwitchDebounce()
             
 # Main UP switch...
-        while Check_Button_Press() & id_sw_Main_Up + id_sw_Main_Up2 + id_sw_Up2:
+        while Check_Button_Press() & (id_sw_Main_Up + id_sw_Main_Up2 + id_sw_Up2):
             if not onceUp:
                 tm = time.ticks_ms()
-                rly_Up.value(is_ON)
+                rly_Up.value(ON)
                 printF("-------------------- MAIN UP --------------------")
                 printF("main -> ", "sw_Main_Up pressed")
                 onceUp = True
                 
         # Up button released...
         if onceUp is True:
-            rly_Up.value(is_OFF)
+            rly_Up.value(OFF)
             secs = float("%.2f" % RunSeconds(tm, time.ticks_ms()))
             tm_Dn_Runtime -= secs
             tm_Dn_Runtime = float("%.2f" % tm_Dn_Runtime)
@@ -211,9 +211,9 @@ try:
             Is_Home()
             
 # Main DN switch...         
-        while Check_Button_Press() & id_sw_Main_Dn + id_sw_Main_Dn2 + id_sw_Dn2:
+        while Check_Button_Press() & (id_sw_Main_Dn + id_sw_Main_Dn2 + id_sw_Dn2):
             if not onceDn:
-                rly_Dn.value(is_ON)
+                rly_Dn.value(ON)
                 tm = time.ticks_ms()
                 printF("-------------------- MAIN DOWN --------------------")
                 printF("main -> ", "sw_Main_Dn pressed")
@@ -221,7 +221,7 @@ try:
                 
         # Dn button released...
         if onceDn is True:
-            rly_Dn.value(is_OFF)
+            rly_Dn.value(OFF)
             secs = float("%.2f" % RunSeconds(tm, time.ticks_ms()))
             tm_Dn_Runtime += secs
             tm_Dn_Runtime = float("%.2f" % tm_Dn_Runtime)
@@ -231,8 +231,8 @@ try:
             
         # Failsafe...
         if (rly_Up.value() == ON or rly_Dn.value() == ON) and RunSeconds(tm, time.ticks_ms()) > tm_failSafeSeconds:
-            rly_Up.value(is_OFF)
-            rly_Dn.value(is_OFF)
+            rly_Up.value(OFF)
+            rly_Dn.value(OFF)
             printF("Main -> FAILSAFE TIMEOUT: ", str(tm_failSafeSeconds), "second abort")
          
         time.sleep(.1)
@@ -242,19 +242,19 @@ try:
 # Exit/error...
 except KeyboardInterrupt:
     # Make sure relays are off
-    rly_Up.value(is_OFF)
-    rly_Dn.value(is_OFF)
+    rly_Up.value(OFF)
+    rly_Dn.value(OFF)
     printF("------------- main.py Exiting   (c)2023 CRAVER Engineering -------------")
   
-except Exception as Argument:  
-    # this catches ALL other exceptions including errors.  
-    # You won't get any error messages for debugging  
-    # so only use it once your code is working
-    rly_Up.value(is_OFF)
-    rly_Dn.value(is_OFF)
-    f = open("Errors.txt", "a")
-    f.write("ERROR: " + str(Argument) + " \nSTerminating main.py \n")
-    f.close()
+# except Exception as Argument:  
+#     # this catches ALL other exceptions including errors.  
+#     # You won't get any error messages for debugging  
+#     # so only use it once your code is working
+#     rly_Up.value(OFF)
+#     rly_Dn.value(OFF)
+#     f = open("Errors.txt", "a")
+#     f.write("ERROR: " + str(Argument) + " \nSTerminating main.py \n")
+#     f.close()
 
 finally:
     led_UP.deinit()
