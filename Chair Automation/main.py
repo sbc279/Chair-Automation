@@ -65,8 +65,10 @@ actual_time = time.localtime(time.ticks_ms() + UTC_OFFSET)
 tm_Dn_Runtime = 0
 
 def Is_Home(mute = False):
-    printF("sw_RiseHome: ",str(sw_RiseHome.value() == ON))
-    printF("sw_ReclHome: ",str(sw_ReclHome.value() == ON))
+    if not mute:
+        printF("sw_RiseHome: ",str(sw_RiseHome.value() == ON))
+        printF("sw_ReclHome: ",str(sw_ReclHome.value() == ON))
+        
     if sw_RiseHome.value() == OFF or sw_ReclHome.value() == OFF:
         if not mute:
             if sw_RiseHome.value() == OFF and sw_ReclHome.value() == OFF:
@@ -128,8 +130,8 @@ try:
         if sw_Up.value() == True:
             SwitchDebounce()
             result = ""
-            printF("------------------------- UP Procedure Started -------------------------")
             if sw_ReclHome.value() == ON or sw_RiseHome.value() == OFF:
+                printF("------------------------- UP Procedure Started -------------------------")
                 # up 'n out
                 tm = time.ticks_ms()
                 rly_Up.value(ON)
@@ -139,6 +141,7 @@ try:
                 #tm_Dn_Runtime -= float(resultVal)
                 printF("main -> ", resultStr.replace("  wait -> ", ""))
             else:
+                printF("----------------------- LOGIC UP Started -------------------------")
                 printF("main -> ", "rly_Up ON")
                 tm = time.ticks_ms()
                 rly_Up.value(ON)
