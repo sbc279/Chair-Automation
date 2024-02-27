@@ -1,7 +1,7 @@
 # Functions.py 
 # version = 2.0.10.13
 
-from secrets import *
+from secret import *
 from config import *
 import network
 import time
@@ -93,8 +93,8 @@ def Check_Button_Press():
         ret += id_sw_upper 		# 512, Limit switch 'Upper'
     if sw_ReclHome.value() == 0:
         ret += id_sw_reclHome 	# 1024, Limit switch 'Lower'
-    if sw_Occup.value() == 0:
-        ret += id_sw_occup 		# 2048, Limit switch 'Occupancy'
+    if sw_Lower.value() == 0:
+        ret += id_sw_lower 		# 2048, Limit switch 'Occupancy'
     return ret
 
 def SetBinString(spacer = "", binValue = 0, strString = ""):
@@ -122,7 +122,7 @@ def SetBinString(spacer = "", binValue = 0, strString = ""):
     if binValue & id_sw_reclHome:  # 1024
         binStr += spacer + "sw_reclHome" + strString
     if binValue & id_sw_occup:  # 2048
-        binStr += spacer + "sw_Occup" + strString
+        binStr += spacer + "sw_Lower" + strString
     return binStr
                 
 def Wait_Time(seconds, spc = 1, watchedBin = 0, checkRunTime = False):
@@ -301,4 +301,5 @@ def ShowOptions():
         printF("ReclHome is enabled")
     else:
         printF("ReclHome is disabled")    
+
 
