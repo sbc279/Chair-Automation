@@ -1,0 +1,43 @@
+
+
+Server side
+---------------------------------------------------------------------
+Set global 'WEBCTL' to False.
+While genereal loop:
+	Check to see if a valid web request request came in:
+		If Yes;
+			Set global 'WEBCTL' is True.
+			Disable LOCAL button control
+			While global 'WEBCTL' is True:
+				If Timer(WEBPOST) >= 6: # After 30 seconds(6 * 5 sec)
+					Kill the socket connection
+					Enable LOCAL button control
+					Set global 'WEBCTL' to False
+					Exit 'If Yes'
+				... ... ... ... ... ...
+				PROCESS WEB REQUEST HERE
+				... ... ... ... ... ...
+			Wend
+		If no:
+			Normal button scan
+Wend
+
+def Timer(WEBPOST, payload): # Every 5 seconds
+	Listen for any RECV packet:  # do not remove from stack??
+		If a packet was NOT received:
+			WEBPOST += 1
+		Else:
+			payload = RECV
+			WEBPOST = 0
+		
+		Return OnCNR
+	
+	
+	
+Web client side
+---------------
+Scan for valid connection:
+	Connection made:
+		A valid web request recceived:
+			Set 'WEBPOST' to 0.
+			Process normally

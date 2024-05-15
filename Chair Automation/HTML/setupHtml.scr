@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Craver Engineering</title>
+
+</head>
+
+<div class="container">
+    <html>
+    <body style="background-color: 'powderblue';">
+	<script>
+		function saveToJson() {
+            data1 =
+				"{\"downStep\": " + document.getElementById("idRclnStep").value + "," +
+				"\"switchRiseHome\": " + document.getElementById("idRiseHome").checked + "," +
+				"\"switchReclHome\": " + document.getElementById("idRclnHome").checked + "," +
+				"\"switchUpper\": " + document.getElementById("idSwitchUpper").checked + "," +
+				"\"switchLower\": " + document.getElementById("idSwitchLower").checked + "," +
+				"\"enableFileLog\": " + document.getElementById("idUseFileLog").checked + "," +
+				"\"logFilename\": \"" + document.getElementById("idFilename").value + "\"," +
+				"\"homeToOut\": " + document.getElementById("idHomeToOut").value + "," +
+				"\"switchbounce\": " + document.getElementById("idDebounce").value + "," +
+				"\"topWait\": " + document.getElementById("idTopWait").value + "," +
+				"\"ledFrequency\": " + document.getElementById("idLedFrequency").value + "," +
+				"\"outToHhome\": " + document.getElementById("idOutToHome").value + "," +
+				"\"ledNormal\": " + document.getElementById("idLedNormal").value + "," +
+				"\"ledMedium\": " + document.getElementById("idLedMedium").value + "," +
+				"\"failSafeSeconds\": " + document.getElementById("idFailsafe").value + "," +
+				"\"ledHigh\": " + document.getElementById("idLedHigh").value + "," +
+				"\"enableWiFi\": " + document.getElementById("idEnableWiFi").checked + "}"
+			
+
+            // Create a new XMLHttpRequest object
+            var xhr = new XMLHttpRequest();
+
+            // Set up the request
+            xhr.open("POST", "http://192.168.7.218/data", true);
+            xhr.setRequestHeader("Content-Type", "application/json");
+
+          
+           // Define function to handle response
+             xhr.onload = function () {
+              if (xhr.status === 200) {
+                    alert("Data sent successfully");
+                    alert('The Chair Controller needs to be resarted for the changes to take affect. After restrting, wait about 30 seconds before reloading the page. \n\r Press Ok to restart');
+                    xhr.open("POST", "http://192.168.7.218/restart", true);
+                    xhr.setRequestHeader("Content-Type", "application/text");        
+                    xhr.send("restarter");          
+                } else {
+                    alert("Error sending data: ", xhr.statusText);
+                }
+            }
+      
+          xhr.send(data1);
+		}
+
+	
+	</script>
+
+<h2>Chair Automation Setup</h2>
+    <table>
+        <tr>
+            <td>Use WiFi:</td>
+            <td><input type="checkbox" id="idEnableWiFi" ^idEnableWiFi^ ></td>
+        </tr>        <tr>
+            <td>Use Home from Rise limit switch:</td>
+            <td><input type="checkbox" id="idRiseHome" ^idRiseHome^ ></td>
+        </tr>
+        <tr>
+            <td>Use Home from Recline limit switch:</td>
+            <td><input type="checkbox" id="idRclnHome" ^idRclnHome^ ></td>
+        </tr>
+        <tr>
+            <td>Use Upper limit switch:</td>
+            <td><input type="checkbox" id="idSwitchUpper" ^idSwitchUpper^ disabled="True"></td>
+        </tr>
+            <tr>
+            <td>Use Lower limit switch:</td>
+            <td><input type="checkbox" id="idSwitchLower" ^idSwitchLower^ disabled="true" ></td>
+        </tr>
+        <tr>
+            <td>Enable file logging:</td>
+            <td><input type="checkbox" id="idUseFileLog" ^idUseFileLog^ >&nbsp;&nbsp;</td>
+            <td>Filename:&nbsp;<input id="idFilename" type="text"  value="^idFilename^" ></td>
+            <td>&nbsp;&nbsp;</td>
+            <td>
+            <p action="/showfile">
+                &nbsp;<input type="submit" id="idFame" value="Show log" disabled="true" />
+            </p> </td>
+        </tr>
+    </table>
+    <hr />
+
+    <b>The following are <i>numeric</i> entries only...</b>
+
+    <table>        
+        <tr>
+            <td>Home to Out time:</td>
+            <td><input id="idHomeToOut" type="number" min="0" max="120" value="^idHomeToOut^" required></td>
+            <td>(0-120 seconds)</td>
+            <td>&nbsp;&nbsp;&nbsp;</td>
+            
+            <td>Anti-Switchbounce Timeout:</td>
+            <td><input id="idDebounce" type="number" min="0" max="1" value="^idDebounce^" required></td>
+            <td>(< 1 second)</td>       
+        </tr>
+        <tr>
+            <td>Top wait to exit time:</td>
+            <td><input id="idTopWait" type="number" min="0" max="120" value="^idTopWait^" required></td>
+            <td>(0-120 seconds)</td>
+            <td>&nbsp;&nbsp;&nbsp;</td>
+            
+            <td>LED frequency value:</td>
+            <td><input id="idLedFrequency" type="number" min="0" max="5000" value="^idLedFrequency^" required></td>
+            <td>(0-5000 integer)</td>
+        </tr>
+        <tr>
+            <td>Out to Home time:</td>
+            <td><input id="idOutToHome" type="number" min="0" max="120" value="^idOutToHome^" required></td>
+            <td>(0-120 seconds)</td>
+            <td>&nbsp;&nbsp;&nbsp;</td>
+
+            <td>LED Normal-Intensity brightness:</td>
+            <td><input id="idLedNormal" type="number" min="0" max="100000" value="^idLedNormal^" required></td>
+            <td>(0-10000 integer)</td>
+        </tr>
+        <tr>
+            <td>Home to Recline step time:</td>
+            <td><input id="idRclnStep" type="number" min="0" max="120" value="^idRclnStep^" required></td>
+            <td>(0-120 seconds)</td>
+            <td>&nbsp;&nbsp;&nbsp;</td>
+            
+            <td>LED Medium-Intensity brightness:</td>
+            <td><input id="idLedMedium"LedMedium" type="number" min="0" max="100000" value="^idLedMedium^" required></td>
+            <td>(0-10000 integer)</td>
+        </tr>
+        <tr>
+            <td>Failsafe Timeout:</td>
+            <td><input id="idFailsafe" type="number" min="0" max="1.0" value="^idFailsafe^" required></td>
+            <td>(0-1.00 seconds)</td>
+            <td>&nbsp;&nbsp;&nbsp;</td>
+            
+            <td>LED High-Intensity brightness:</td>
+            <td><input id="idLedHigh" type="number" min="0" max="100000" value="^idLedHigh^" required></td>
+            <td>(0-10000 integer)</td>
+        </tr>    
+     </table>
+    <p>
+        <input id="idSend" onclick=saveToJson() value="Save changes"  />
+    </p>
+    <p>
+        <a href="/back">Back to main page</a>
+    </p>
+
+    <h6><i>(c)2024 Craver Engineering</i></h6>
+
+    </body>
+</html>
+
+<!-- https://stackoverflow.com/questions/16036041/can-a-html-button-perform-a-post-request
+-->
