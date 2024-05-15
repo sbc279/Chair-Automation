@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>CRAVER Engineering</title> </head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Responsive Page</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f2f2f2;
+  }
+  
+  .container {
+    width: 80%;
+    margin: auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  }
+
+  h1 {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  p {
+    line-height: 1.6;
+  }
+
+  @media only screen and (max-width: 768px) {
+    .container {
+      width: 90%;
+    }
+  }
+</style>
+<script type='text/javascript'>
+    function RuleEdit() {
+        var oReturnValue = window.showModalDialog('ruleEdit.aspx?index=', '', 'center:1; dialogWidth:40; dialogHeight:35; resizable:1; scroll:1; status:0;');
+        }
+    }
+</script>
+</head>
+<body>
+
+<div class="container">
+    <body> <h1>Chair Controller</h1>
+        <p>WiFi control</p>
+        <p>
+            <a href='/0'>Stop all motion</a>
+        </p>
+        <p>
+            <a href='/1'>Perform Up and Out</a>
+        </p>
+        <p>
+            <a href='/2'>Logic Chair down</a>
+        </p>
+        <p>
+            <a href='/3'>Chair down</a>
+        </p>
+        <p>
+            <a href='/up'>Chair up</a> <!--97b3682a7bcff0dbafea19933bf2fc52f5674779b17047adeabd490807bc3d469c2c1e0616e687d140e7186218c9d3a18c15f16631459266ef3a16b87fcc6de2/'>-->
+        </p>
+        <br>
+        <form action="/setup">
+            <input type="submit" value="Setup"  />
+        </form>        
+        <h6><i>(c)2024 Craver Engineering</i></h6>
+    </body>
+</html>
