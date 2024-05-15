@@ -56,7 +56,7 @@ use_sw_ReclHome = bool(json_data['switchReclHome'])
 use_sw_Upper = bool(json_data['switchUpper'])
 use_sw_Lower = bool(json_data['switchLower'])
 
-# LED brightness 
+# LED brightness
 ledFreq = int(json_data['ledFrequency'])
 brightness_NormIntensityLed = int(json_data['ledNormal'])
 brightness_MediumIntensityLed = int(json_data['ledMedium'])
