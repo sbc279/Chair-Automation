@@ -1,11 +1,15 @@
+# functions.py
+# version = 5.22.24
+
 import machine
+from machine import Timer
 import micropython
 import network
 import socket
 import time
 from config import *
 import config
-from secret import *
+from secrets import *
 from functions import *
 from createSetup import *
 import json
@@ -13,6 +17,7 @@ import json
 import ujson
 
 pHeader = "webServer: "
+htmlSetup = Create("192.168.7.220")
 
 # ---------------------------- wifi --------------------------
 #s = socket.socket()
@@ -25,7 +30,7 @@ f.close()
 html = htmlMain
 txt = ''
 printF(pHeader, 'creating setup html page')
-htmlSetup = Create()
+#htmlSetup = Create()
 
     # ---------------------------- wifi --------------------------			
 def clientSend(cl):
@@ -57,8 +62,8 @@ def clientSend(cl):
 #             # up 'n out
             printF(pHeader, 'proccessing :uOut')
             tm = time.ticks_ms()
-            rly_Up.value(config.is_ON)
-            result = Up_To_Out(tm_Dn_Runtime) 
+            rly_Up.value(config.ON)
+            result = Up_To_Out(config.tm_home_to_out) 
             resultStr = result.split(',')[0]
             resultVal = result.split(',')[1]
             #tm_Dn_Runtime -= float(resultVal)
@@ -89,7 +94,7 @@ def clientSend(cl):
             printF(pHeader, 'proccessing :setup')
             stateis = ""
             #SetVars()
-            htmlSetup = Create()            
+            #htmlSetup = Create()            
             SendResponse(cl, htmlSetup) # Setup page
             return
         if back == 6:
@@ -159,13 +164,13 @@ def WebServerCommon():
         
         s.bind(addr)
         s.listen(1)
-        printF(pHeader, 'Socket created: ', s.gethostbyname(),", ", s.IPPROTO_IP)
-        s.setsockopt(s.SOL_SOCKET, 20, handler)
+        printF(pHeader, 'Socket created: ')
+        s.setsockopt(socket.SOL_SOCKET, 20, handler)
                    
         printF(pHeader, 'listening on', addr)
 
         stateis = ""
-                       
+       # htmlSetup = Create("192.168.7.220")                 
         
 def handler(svr):
     cs, ca = svr.accept()
@@ -178,6 +183,7 @@ def handler(svr):
 #     
     
     if method == 'POST':
+        config.WEBCTL = True
         config.WEBPOST = 0
         printF(pHeader, "POST postback received ")
         if url == '/restart':
@@ -204,6 +210,7 @@ def handler(svr):
             
             clientSend(cs)
     else:
+        config.WEBCTL = True
         stateis=""
         clientSend(cs)
         return
@@ -227,7 +234,7 @@ def Timer(WEBPOST, payload): # Every 5 seconds
     else:
         if config.WEBPOST >= 6:
             DisconnectWebServer()
-            config.WEBCTL = False        
+            #config.WEBCTL = False        
             config.WEBPOST = 0
             return WEBPOST
 
@@ -237,3 +244,21 @@ tim_ch = tim.channel(Timer.A, freq=5)            # configure channel A at a freq
 
 # Call Timer(WEBPOST, payload) every cycle of the timer
 tim_ch.irq(handler=lambda t:Timer(config.WEBPOST, config.WEBconfig.WEBREQUEST), trigger=Timer.TIMEOUT)        
+
+def TimerWork(WEBPOST, payload): # Every 5 seconds
+    if not payload == "":
+        config.WEBPOST = config.WEBPOST + 1
+
+    else:
+        if config.WEBPOST >= 6:
+            DisconnectWebServer()
+            config.WEBCTL = False        
+            config.WEBPOST = 0
+            return WEBPOST
+
+tim = Timer(3)                                # create a timer object using timer
+tim.init(mode=Timer.PERIODIC)                    # initialize it in periodic mode
+tim_ch = tim.channel(Timer.A, freq=5)            # configure channel A at a frequency of 5Hz
+
+# Call Timer(WEBPOST, payload) every cycle of the timer
+tim_ch.irq(handler=lambda t:TimerWork(config.WEBPOST, config.WEBconfig.WEBREQUEST), trigger=Timer.TIMEOUT)        

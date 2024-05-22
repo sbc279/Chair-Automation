@@ -1,5 +1,5 @@
 # Functions.py 
-# version = 2.0.10.13
+# version = 5.22.24
 
 from secret import *
 from config import *
@@ -24,7 +24,7 @@ def printF(msg, msg2 = "", msg3 = "", msg4 = "", msg5 = "", msg6 = "", msg7 = ""
         f.close()
         
 def RunSeconds(startTick, nowTick, precision = 2):
-    return round((nowTick/1000 - startTick) / 1000, precision)
+    return round((nowTick/1000 - startTick/1000), precision)
 
 def IsPlural(number):
     if number > 1:
@@ -62,7 +62,7 @@ def Check_Button_Press():
     
     # Limit switches...
     if sw_RiseHome.value() == 0 and use_sw_RiseHome: 	# 256, Rise home switch (if enabled)
-        ret += id_sw_riseHome
+        ret += id_sw_RiseHome
     if sw_Upper.value() == 0 and use_sw_Upper:			# 512, Rise upper switch (if enabled)
         ret += id_sw_Upper
     if sw_ReclHome.value() == 0 and use_sw_ReclHome:	# 1024, Recline home switch (if enabled)
@@ -72,35 +72,34 @@ def Check_Button_Press():
     return ret
 
 def SetBinString(spacer = "", binValue = 0, strString = ""):
-    binStr = ""
     if binValue & id_btn_Logic_Up:						# 1
-        binStr += spacer + "btn_Logic_Up" + strString
+        return spacer + "btn_Logic_Up" + strString
     if binValue & id_btn_Logic_Dn:						# 2
-        binStr += spacer + "btn_Logic_Dn" + strString
+        return spacer + "btn_Logic_Dn" + strString
     if binValue & id_btn_Logic_Up2:						# 4
-        binStr += spacer + "btn_Logic_Up2" + strString
+        return spacer + "btn_Logic_Up2" + strString
     if binValue & id_btn_Logic_Dn2:						# 8
-        binStr += spacer + "btn_Logic_Dn2" + strString
+        return spacer + "btn_Logic_Dn2" + strString
     if binValue & id_btn_Main_Up: 						# 16
-        binStr += spacer + "btn_Main_Up" + strString
+        return spacer + "btn_Main_Up" + strString
     if binValue & id_btn_Main_Up2: 						# 32
-        binStr += spacer + "btn_Main_Up2" + strString                
+        return spacer + "btn_Main_Up2" + strString                
     if binValue & id_btn_Main_Dn: 						# 64
-        binStr += spacer + "btn_Main_Dn" + strString    
+        return spacer + "btn_Main_Dn" + strString    
     if binValue & id_btn_Main_Dn2: 						# 128
-        binStr += spacer + "btn_Main_Dn2" + strString    
-    if binValue & id_sw_riseHome and use_sw_RiseHome:  	# 256 (if enabled)
-        binStr += spacer + "sw_RiseHome" + strString
+        return spacer + "btn_Main_Dn2" + strString    
+    if binValue & id_sw_RiseHome and use_sw_RiseHome:  	# 256 (if enabled)
+        return spacer + "sw_RiseHome" + strString
     if binValue & id_sw_Upper and use_sw_Upper:  		# 512 (if enabled)
-        binStr += spacer + "sw_Upper" + strString
+        return spacer + "sw_Upper" + strString
     if binValue & id_sw_ReclHome and use_sw_ReclHome:	# 1024 (if enabled)
-        binStr += spacer + "sw_reclHome" + strString
+        return spacer + "sw_reclHome" + strString
     if binValue & id_sw_Lower and use_sw_Lower:  		# 2048 (if enabled)
-        binStr += spacer + "sw_Upper" + strString        
+        return spacer + "sw_Upper" + strString        
 
-    return binStr
+    return ""
                 
-def Wait_Time(seconds, spc = 1, watchedBin = 0, checkRunTime = False):
+def Wait_Time(seconds, spc = 1, watchedBin = 0, checkRunTime = False, Dn_Runtime = 0):
 
     # Compensate for PICO's latency
     picoLatency = 0 #.11
@@ -114,54 +113,61 @@ def Wait_Time(seconds, spc = 1, watchedBin = 0, checkRunTime = False):
     complete = False
     lf = "\n\t\t"
     watchedBinStr = "none"
+    interrupt = False
 
     if watchedBin > 0:
         watchedBinStr = SetBinString("\t\t" , watchedBin, " edge detection is being monitored" + lf)
 
     printF(spacer, "Watched Edge Detection: " + str(watchedBin))
-    printF(spacer, "Adjusted Wait Time: ", str(seconds) + " second", IsPlural(seconds)) 
+
     if checkRunTime == True:
         watchedBinStr += spacer + "tm_Dn_Runtime is being monitored" + lf
-        
+
     if watchedBinStr.endswith(lf): # strip off the trailing feed/tab, if needed        
        watchedBinStr = watchedBinStr.rstrip(lf)        
-    
+
     while exitReason == "":
-        if checkRunTime == True:
-            if abs(tm_Dn_Runtime) - RunSeconds(wtm, time.ticks_ms()) <= 0:
+        if checkRunTime == True and Dn_Runtime > 0:
+            if RunSeconds(wtm, time.ticks_ms(), 2) > abs(Dn_Runtime):
                 exitReason = "tm_Dn_Runtime reached 0"
+                interrupt = True
         
         trigger = Check_Button_Press()
        
         if watchedBin & trigger:
             exitReason = SetBinString(spacer, watchedBin & trigger, " interrupt")
+            interrupt = True
         
         if exitReason == "" and (RunSeconds(wtm, time.ticks_ms(), 2) > seconds):
             trigger = -1
             exitReason = "Time (True)"
 
-        
-    printF(spacer + "EXIT: Completed - Reason = " + exitReason)
+    if interrupt:   
+        printF(spacer + "EXIT: INTERRUPTED - Reason = " + exitReason)
+    else:
+        printF(spacer + "EXIT: Completed - Reason = " + exitReason)
     printF(spacer + "Complete wait time = ", str(RunSeconds(wtm, time.ticks_ms())), " seconds - Returning to caller")
     once = False
     
     return exitReason + "," + str(RunSeconds(wtm, time.ticks_ms()))
 
-def Up_To_Out(spc = 1, tm_Dn_Runtime= 0):
+def Up_To_Out(tm_Dn_Runtime = 0):
+    spc = 1
     spacer = Space(spc) + "topToHome -> "
     rly_Up.value(ON)
+    #led_BLU.duty_u16(brightness_NormIntensityLed)
     printF(spacer + "Up_To_Out() activated.  tm_Dn_Runtime = ", str(tm_Dn_Runtime))
     printF(spacer + "rly_Up ON")
     
 ## ----- Go UP -----
     
-    if sw_RiseHome.value() == ON:
-        tm_temp = tm_out_to_home - tm_Dn_Runtime
-    else:
-        tm_temp = tm_out_to_home
+#     if True #sw_RiseHome.value() == ON:
+    tm_temp = tm_out_to_home - tm_Dn_Runtime
+#     else:
+#         tm_temp = tm_out_to_home
 
     printF(spacer + "Waiting " + str(tm_temp) + " seconds")
-    result = Wait_Time(tm_temp, spc + 1, id_All - id_sw_riseHome - id_sw_ReclHome)
+    result = Wait_Time(tm_temp, spc + 1, id_all - id_sw_RiseHome - id_sw_ReclHome - id_btn_Logic_Up, False)
 
     printF(result)
     resultStr = result.split(',')[0]
@@ -170,7 +176,7 @@ def Up_To_Out(spc = 1, tm_Dn_Runtime= 0):
     printF(spacer, "rly_Up OFF")
     rly_Up.value(OFF)
     
-    if resultStr != "sw_Upper interrupt" and resultStr != "Time (True)":
+    if resultStr != "btn_Logic_Upper interrupt" and resultStr != "Time (True)":
         printF(spacer, "Out_To_Home interrupt")
         printF(spacer + "EXIT: Returning to caller (l:234)")
         return result
@@ -178,15 +184,17 @@ def Up_To_Out(spc = 1, tm_Dn_Runtime= 0):
 ## ----- TopWait -----
         
         # Manually turn on the LED's
-        led_DN.duty_u16(brightness_NormIntensityLed)
-        led_UP.duty_u16(brightness_NormIntensityLed)
+        led_BLU.duty_u16(brightness_NormIntensityLed)
+        led_WHT.duty_u16(brightness_NormIntensityLed)
         
         printF(spacer, str(tm_top_wait) + " second wait")
-        result = Wait_Time(tm_top_wait, spc + 1, id_All - id_sw_ReclHome - id_sw_riseHome).strip()
+        result = Wait_Time(tm_top_wait, spc + 1, id_all - id_sw_ReclHome - id_sw_RiseHome).strip()
         resultStr = result.split(',')[0]
-
+        resultTime = float(result.split(',')[1])
+        
         # Manually turn off the LED's
-        led_UP.duty_u16(0)
+        led_WHT.duty_u16(0)
+        led_BLU.duty_u16(0)
         # The relay interrupt will resume LED control from here
         
         if resultStr != "Time (True)":
@@ -194,10 +202,13 @@ def Up_To_Out(spc = 1, tm_Dn_Runtime= 0):
         else:
             
 ## ----- Go DOWN -----
-            led_DN.duty_u16(brightness_NormIntensityLed)
+            resultTime = float(result.split(',')[1])
+            durationTime = tm_out_to_home - abs(tm_Dn_Runtime)
             printF(spacer, "TopWait complete")
-            result = Down_To_Home(spc + 1, tm_temp)
-            led_DN.duty_u16(0)
+            printF(spacer, "tm_Dn_Runtime = ", tm_Dn_Runtime)
+            printF(spacer, "Time consumed: ", resultTime)
+            printF(spacer, "durationTime = ", durationTime)
+            result = Down_To_Home(spc + 1, durationTime)
             
     printF(spacer + "EXIT: Returning to caller")
     return result
@@ -206,13 +217,13 @@ def Down_To_Home(spc = 1, duration = float(0.0)):
     spacer = Space(spc) + "downToHome -> "
     rly_Dn.value(ON)
     printF(spacer, "rly_Dn ON")
-    printF(spacer, "tm_Dn_Runtime = " + str(duration))
+    printF(spacer, "duration = ", duration)
     ignorer = 0
     if id_sw_ReclHome:
-        ignorer = id_sw_ReclHome   
-    result = Wait_Time(duration, spc + 1, id_All - ignorer, False)
+        ignorer = id_sw_ReclHome + id_btn_Logic_Dn  
+    result = Wait_Time(duration, spc + 1, id_all - ignorer, False)
     resultStr = result.split(',')[0]
-    resultVal = result.split(',')[1]
+    resultTime = result.split(',')[1]
 
     rly_Dn.value(OFF)
     printF(spacer, "rly_Dn OFF")
@@ -221,35 +232,48 @@ def Down_To_Home(spc = 1, duration = float(0.0)):
         printF(spacer, ": complete. At home")
     else:
         if resultStr == "Time (True)" or resultStr == "tm_Dn_Runtime reached 0": 
-            printF(spacer, "Dn timeout reached: ", str(resultVal), ' seconds without home interrupt')
+            printF(spacer, "Dn timeout reached: ", resultTime, ' seconds without home interrupt')
         else:
             printF(spacer, resultStr, " interrupt detected")
             
-    printF(spacer + " EXIT: Returning to caller: " + str(resultVal))
+    printF(spacer + " EXIT: Returning to caller: ", resultTime)
     return result
 
 def SelfCheck():
-    ledTime = float(0.1)
+    printF("SelfCheck...")
+    ledTime = float(0.2)
+    breakTime = float(0.1)
     
-    led_UP.duty_u16(brightness_NormIntensityLed)
+    led_RED.duty_u16(brightness_NormIntensityLed)
     time.sleep(ledTime)
-    led_reclHome.duty_u16(brightness_NormIntensityLed)
+    led_WHT.duty_u16(brightness_NormIntensityLed)
     time.sleep(ledTime)
-    led_riseHome.duty_u16(brightness_NormIntensityLed)
+    led_YEL.duty_u16(brightness_NormIntensityLed)
     time.sleep(ledTime)
-    led_DN.duty_u16(brightness_NormIntensityLed)
-    time.sleep(ledTime)
-    
-    
+    led_BLU.duty_u16(brightness_NormIntensityLed)
     time.sleep(ledTime)
     
-    led_DN.duty_u16(0)
+    
     time.sleep(ledTime)
-    led_riseHome.duty_u16(0)
+    for x in range(.2):
+        led_BLU.duty_u16(0)
+        led_YEL.duty_u16(0)
+        led_WHT.duty_u16(0)
+        led_RED.duty_u16(0)
+        time.sleep(breakTime)#------------------------------------------
+        led_BLU.duty_u16(brightness_HighIntensityLed)
+        led_YEL.duty_u16(brightness_HighIntensityLed)
+        led_WHT.duty_u16(brightness_HighIntensityLed)
+        led_RED.duty_u16(brightness_HighIntensityLed)
+        time.sleep(breakTime)
+    
+    led_BLU.duty_u16(0)
     time.sleep(ledTime)
-    led_reclHome.duty_u16(0)
+    led_YEL.duty_u16(0)
     time.sleep(ledTime)
-    led_UP.duty_u16(0)
+    led_WHT.duty_u16(0)
+    time.sleep(ledTime)
+    led_RED.duty_u16(0)
     
     time.sleep(ledTime)
 
