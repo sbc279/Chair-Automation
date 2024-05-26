@@ -1,5 +1,5 @@
 # Config.py version...
-version = "5.22.24"
+version = "5.26.24"
 
 from machine import Pin, PWM
 import machine
@@ -79,19 +79,42 @@ id_btn_Main_Dn 		= 16
 id_btn_Main_Up 		= 32
 id_btn_Main_Up2 	= 64
 id_btn_Main_Dn2 	= 128
-id_sw_RiseHome 		= 256
+if use_sw_RiseHome:
+    id_sw_RiseHome 	= 256
+else:
+    id_sw_RiseHome 	= 0
+    
 id_sw_Upper 		= 512
-id_sw_ReclHome 		= 1024
+if use_sw_RiseHome:
+    id_sw_RiseHome 	= 256
+else:
+    id_sw_RiseHome 	= 0
+
+if use_sw_RiseHome:
+    id_sw_RiseHome 	= 256
+else:
+    id_sw_RiseHome 	= 0
+   
+if use_sw_ReclHome:
+    id_sw_ReclHome 	= 1024
+else:
+    id_sw_ReclHome 	= 0 
+
 id_sw_Lower 		= 2048
 id_led_Home 		= 4096
 id_led_REDper 		= 8192
 id_led_Lower 		= 16384
 id_led_Occup 		= 32768
 
-# bin enum control groups
-id_sw_All = 	    255
-id_sw_AllLimits =	3840
+# bin enum control groups 3072
+
+id_sw_all = 	    255
+id_sw_allLimits =	3840
 id_all =			4095
+
+# id_sw_all 			= 255b #3072 #255
+id_btn_All 			= 3840 #1023 # 3840
+# id_all				= 4095
     
 # Control
 rly_Up 			= Pin(0,  Pin.OUT)                        # Main UP relay output
@@ -101,10 +124,10 @@ sw_ReclHome 	= Pin(3,  Pin.IN, pull = Pin.PULL_UP)     # Recline Home Limit swit
 sw_Upper		= Pin(4,  Pin.IN, pull = Pin.PULL_UP)     # Upper Limit switch,         internal pull-up resistor
 sw_Lower    	= Pin(5,  Pin.IN, pull = Pin.PULL_UP)     # Occupancy Limit switch,     internal pull-up resistor
 
-btn_Main_Dn2 	= Pin(9,  Pin.IN, pull = Pin.PULL_DOWN)   # Main switch, bank 2 DOWN,   internal pull-down resistor
-btn_Main_Dn  	= Pin(7,  Pin.IN, pull = Pin.PULL_DOWN)   # Main switch, bank 2 UP,     internal pull-down resistor
-btn_Main_Up		= Pin(8,  Pin.IN, pull = Pin.PULL_DOWN)   # Main switch, bank 1 UP,     internal pull-down resistor
-btn_Main_Up2	= Pin(6,  Pin.IN, pull = Pin.PULL_DOWN)   # Main switch, bank 1 DOWN,   internal pull-down resistor
+btn_Main_Dn2 	= Pin(8,  Pin.IN, pull = Pin.PULL_DOWN)   # Main switch, bank 2 DOWN,   internal pull-down resistor
+btn_Main_Dn  	= Pin(6,  Pin.IN, pull = Pin.PULL_DOWN)   # Main switch, bank 2 UP,     internal pull-down resistor
+btn_Main_Up		= Pin(9,  Pin.IN, pull = Pin.PULL_DOWN)   # Main switch, bank 1 UP,     internal pull-down resistor
+btn_Main_Up2	= Pin(7,  Pin.IN, pull = Pin.PULL_DOWN)   # Main switch, bank 1 DOWN,   internal pull-down resistor
 btn_Logic_Up   	= Pin(10, Pin.IN, pull = Pin.PULL_DOWN)   # Logic switch, bank 1 UP,    internal pull-down resistor
 btn_Logic_Dn   	= Pin(11, Pin.IN, pull = Pin.PULL_DOWN)   # Logic switch, bank 1 DOWN,  internal pull-down resistor
 btn_Logic_Up2   = Pin(12, Pin.IN, pull = Pin.PULL_DOWN)   # Logic switch, bank 2 UP,    internal pull-down resistor

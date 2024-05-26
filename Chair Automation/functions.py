@@ -1,5 +1,5 @@
 # Functions.py 
-# version = 5.22.24
+# version = 5.26.24
 
 from secret import *
 from config import *
@@ -24,7 +24,7 @@ def printF(msg, msg2 = "", msg3 = "", msg4 = "", msg5 = "", msg6 = "", msg7 = ""
         f.close()
         
 def RunSeconds(startTick, nowTick, precision = 2):
-    return round((nowTick/1000 - startTick/1000), precision)
+    return round((nowTick/1000 - startTick/1000) / 1000, precision)
 
 def IsPlural(number):
     if number > 1:
@@ -37,37 +37,37 @@ def Space(spc):
     for i in range(0, spc):
         str += " "
     return str
-
+    
 def Check_Button_Press():
     ret = 0
         
-    # Controller switches...    
-    if btn_Logic_Up.value() == OFF:     # 1, Logic up
+    # Controller switches...  
+    if btn_Logic_Up.value() == True:     # 1, Logic up
         ret = id_btn_Logic_Up 			
-    if btn_Logic_Up2.value() == OFF:    # 2, Logic up, bank 2
+    if btn_Logic_Up2.value() == True:    # 2, Logic up, bank 2
         ret += id_btn_Logic_Up2 		
-    if btn_Logic_Dn.value() == OFF:     # 4, Logic down
+    if btn_Logic_Dn.value() == True:     # 4, Logic down
         ret += id_btn_Logic_Dn 		
-    if btn_Logic_Dn2.value() == OFF:    # 8, Logic down ,bank 2    
+    if btn_Logic_Dn2.value() == True:    # 8, Logic down ,bank 2    
         ret += id_btn_Logic_Dn2 	
         
-    if btn_Main_Up.value() == OFF:      # 32, Main up
+    if btn_Main_Up.value() == True:      # 32, Main up
         ret += id_btn_Main_Up 	
-    if btn_Main_Up2.value() == OFF:     # 64, Main up, bank 2
+    if btn_Main_Up2.value() == True:     # 64, Main up, bank 2
         ret += id_btn_Main_Up2 	
-    if btn_Main_Dn.value() == OFF:      # 16, Main down
+    if btn_Main_Dn.value() == True:      # 16, Main down
         ret += id_btn_Main_Dn 	
-    if btn_Main_Dn2.value() == OFF:     # 128, Main down, bank 2
+    if btn_Main_Dn2.value() == True:     # 128, Main down, bank 2
         ret += id_btn_Main_Dn2 	
     
     # Limit switches...
-    if sw_RiseHome.value() == 0 and use_sw_RiseHome: 	# 256, Rise home switch (if enabled)
+    if sw_RiseHome.value() == False and use_sw_RiseHome: 	# 256, Rise home switch (if enabled)
         ret += id_sw_RiseHome
-    if sw_Upper.value() == 0 and use_sw_Upper:			# 512, Rise upper switch (if enabled)
+    if sw_Upper.value() == False and use_sw_Upper:			# 512, Rise upper switch (if enabled)
         ret += id_sw_Upper
-    if sw_ReclHome.value() == 0 and use_sw_ReclHome:	# 1024, Recline home switch (if enabled)
+    if sw_ReclHome.value() == False and use_sw_ReclHome:	# 1024, Recline home switch (if enabled)
         ret += id_sw_ReclHome
-    if sw_Lower.value() == 0 and use_sw_Lower:			# 2048, Recline lower switch (if enabled)
+    if sw_Lower.value() == False and use_sw_Lower:			# 2048, Recline lower switch (if enabled)
         ret += id_sw_Lower
     return ret
 
@@ -88,68 +88,134 @@ def SetBinString(spacer = "", binValue = 0, strString = ""):
         return spacer + "btn_Main_Dn" + strString    
     if binValue & id_btn_Main_Dn2: 						# 128
         return spacer + "btn_Main_Dn2" + strString    
-    if binValue & id_sw_RiseHome and use_sw_RiseHome:  	# 256 (if enabled)
+    if binValue & id_sw_RiseHome:  # and use_sw_RiseHome:  	# 256 (if enabled)
         return spacer + "sw_RiseHome" + strString
     if binValue & id_sw_Upper and use_sw_Upper:  		# 512 (if enabled)
         return spacer + "sw_Upper" + strString
-    if binValue & id_sw_ReclHome and use_sw_ReclHome:	# 1024 (if enabled)
+    if binValue & id_sw_ReclHome: # and use_sw_ReclHome:	# 1024 (if enabled)
         return spacer + "sw_reclHome" + strString
     if binValue & id_sw_Lower and use_sw_Lower:  		# 2048 (if enabled)
         return spacer + "sw_Upper" + strString        
-
+   
     return ""
-                
-def Wait_Time(seconds, spc = 1, watchedBin = 0, checkRunTime = False, Dn_Runtime = 0):
 
-    # Compensate for PICO's latency
-    picoLatency = 0 #.11
-    
-    seconds = seconds - picoLatency
-    spacer = Space(spc) + "wait -> "
+def WaitLogic(duration, useTime, watchBin):
+    spacer = Space(1) + "waitLogic -> "
     once = False
     wtm = time.ticks_ms()
     trigger = 0
     exitReason = ""
-    complete = False
-    lf = "\n\t\t"
-    watchedBinStr = "none"
-    interrupt = False
+    
+#     if not useTime, and watchBin > 0:
+#         # # For the duration, Watch for 'watchBin' switch only
+#         watchBinStr = SetBinString("\t\t" , watchBin, " edge detection ONLY is being monitored" + lf)
+#         printF(spacer, "Watched Edge Detection ONLY for: " + str(watchedBin))
+#         while exitReason == "":
+#         not Check_Button_Press() == watchBin or not RunSeconds(wtm, time.ticks_ms(), 2) >= duration):
+#             time.sleep(.01)
+#         
+#         exitReason = "Duration reached 0"
+#         Summary(wtm, interrupt, exitReason)            
+#         return exitReason + "," + str(RunSeconds(wtm, time.ticks_ms()))
+    
+    if useTime and watchBin > 0:
+        # For the duration, but Watch for any switch (ignoring the'watchBin' switch)
+        printF(spacer, "Waiting ", str(duration), " seconds while Watching Edge Detection: " + str(watchBin))
+        printF(spacer, SetBinString("\t\t" , watchBin, " edge detection is being monitored"))
+        # NORMAL opereation
+        while exitReason == "":
+            if RunSeconds(wtm, time.ticks_ms(), 2) >= duration:
+                exitReason = "Duration reached 0"
+                interrupt = False
+                time.sleep(.01)
+            else:
+                trigger = Check_Button_Press()
+                if watchedBin & trigger:
+                    exitReason = SetBinString(spacer, watchBin & trigger, " interrupt")
+                    interrupt = True
+                    time.sleep(.01)
+            
+        Summary(spacer, wtm, interrupt, exitReason)
+        return exitReason + "," + str(RunSeconds(wtm, time.ticks_ms()))
+    
+    if not useTime and watchBin > 0:
+        # For the duration ONLY, while watching for any switch (ignoring the'watchBin' switch)
+        printF(spacer, "Waiting ", str(duration), " seconds ONLY, while Watching Edge Detection: " + str(watchBin))
+        printF(spacer, SetBinString("\t\t" , watchBin, " edge detection is being monitored"))
+        while exitReason == "":
+            if RunSeconds(wtm, time.ticks_ms(), 2) >= duration:
+                exitReason = "Duration reached 0"
+                interrupt = False
+                time.sleep(.01)
+            else:
+                trigger = Check_Button_Press()
+                if not watchBin & trigger:
+                    exitReason = SetBinString(spacer, watchBin & trigger, " interrupt")
+                    interrupt = True
+                    time.sleep(.01)
+            
+        Summary(spacer, wtm, interrupt, exitReason)
+        return exitReason + "," + str(RunSeconds(wtm, time.ticks_ms()))
 
-    if watchedBin > 0:
-        watchedBinStr = SetBinString("\t\t" , watchedBin, " edge detection is being monitored" + lf)
-
-    printF(spacer, "Watched Edge Detection: " + str(watchedBin))
-
-    if checkRunTime == True:
-        watchedBinStr += spacer + "tm_Dn_Runtime is being monitored" + lf
-
-    if watchedBinStr.endswith(lf): # strip off the trailing feed/tab, if needed        
-       watchedBinStr = watchedBinStr.rstrip(lf)        
-
-    while exitReason == "":
-        if checkRunTime == True and Dn_Runtime > 0:
-            if RunSeconds(wtm, time.ticks_ms(), 2) > abs(Dn_Runtime):
-                exitReason = "tm_Dn_Runtime reached 0"
-                interrupt = True
-        
-        trigger = Check_Button_Press()
-       
-        if watchedBin & trigger:
-            exitReason = SetBinString(spacer, watchedBin & trigger, " interrupt")
-            interrupt = True
-        
-        if exitReason == "" and (RunSeconds(wtm, time.ticks_ms(), 2) > seconds):
-            trigger = -1
-            exitReason = "Time (True)"
-
+def Summary(spacer, wtm, interrupt, exitReason):
     if interrupt:   
         printF(spacer + "EXIT: INTERRUPTED - Reason = " + exitReason)
     else:
         printF(spacer + "EXIT: Completed - Reason = " + exitReason)
     printF(spacer + "Complete wait time = ", str(RunSeconds(wtm, time.ticks_ms())), " seconds - Returning to caller")
-    once = False
     
-    return exitReason + "," + str(RunSeconds(wtm, time.ticks_ms()))
+            
+# def Wait_Time(seconds, spc = 1, watchedBin = 0, checkRunTime = False, Dn_Runtime = 0):
+# 
+#     # Compensate for PICO's latency
+#     picoLatency = 0 #.11
+#     
+#     seconds = seconds - picoLatency
+#     spacer = Space(spc) + "wait -> "
+#     once = False
+#     wtm = time.ticks_ms()
+#     trigger = 0
+#     exitReason = ""
+#     complete = False
+#     lf = "\n\t\t"
+#     watchedBinStr = "none"
+#     interrupt = False
+#     
+#     if watchedBin > 0:
+#         watchedBinStr = SetBinString("\t\t" , watchedBin, " edge detection is being monitored" + lf)
+# 
+#     printF(spacer, "Watched Edge Detection: " + str(watchedBin))
+# 
+#     if checkRunTime == True:
+#         watchedBinStr += spacer + "tm_Dn_Runtime is being monitored" + lf
+# 
+#     if watchedBinStr.endswith(lf): # strip off the trailing feed/tab, if needed        
+#        watchedBinStr = watchedBinStr.rstrip(lf)        
+#          
+#     while exitReason == "":
+#         if checkRunTime == True and Dn_Runtime > 0:
+#             if RunSeconds(wtm, time.ticks_ms(), 2) > abs(Dn_Runtime):
+#                 exitReason = "tm_Dn_Runtime reached 0"
+#                 interrupt = True
+#         
+#         trigger = Check_Button_Press()
+#        
+#         if watchedBin & trigger:
+#             exitReason = SetBinString(spacer, watchedBin & trigger, " interrupt")
+#             interrupt = True
+#         
+# #         if exitReason == "" and (checkRunTime and RunSeconds(wtm, time.ticks_ms(), 2) > seconds):
+# #             trigger = -1
+# #             exitReason = "Time (True)"
+# 
+#     if interrupt:   
+#         printF(spacer + "EXIT: INTERRUPTED - Reason = " + exitReason)
+#     else:
+#         printF(spacer + "EXIT: Completed - Reason = " + exitReason)
+#     printF(spacer + "Complete wait time = ", str(RunSeconds(wtm, time.ticks_ms())), " seconds - Returning to caller")
+#     once = False
+#     
+#     return exitReason + "," + str(RunSeconds(wtm, time.ticks_ms()))
 
 def Up_To_Out(tm_Dn_Runtime = 0):
     spc = 1
@@ -161,14 +227,16 @@ def Up_To_Out(tm_Dn_Runtime = 0):
     
 ## ----- Go UP -----
     
-#     if True #sw_RiseHome.value() == ON:
-    tm_temp = tm_out_to_home - tm_Dn_Runtime
+#     if True #sw_RiseHome.value() == False:
+    tm_temp = tm_out_to_home # - tm_Dn_Runtime
 #     else:
 #         tm_temp = tm_out_to_home
 
     printF(spacer + "Waiting " + str(tm_temp) + " seconds")
-    result = Wait_Time(tm_temp, spc + 1, id_all - id_sw_RiseHome - id_sw_ReclHome - id_btn_Logic_Up, False)
-
+    # result = Wait_Time(tm_temp, spc + 1, id_all - id_sw_RiseHome - id_sw_ReclHome - id_btn_Logic_Up, False)
+    watchBin = id_all - id_sw_RiseHome + id_btn_Logic_Up
+    result = WaitLogic(tm_out_to_home, False, watchBin)
+    
     printF(result)
     resultStr = result.split(',')[0]
     resultVal = result.split(',')[1]
@@ -188,7 +256,8 @@ def Up_To_Out(tm_Dn_Runtime = 0):
         led_WHT.duty_u16(brightness_NormIntensityLed)
         
         printF(spacer, str(tm_top_wait) + " second wait")
-        result = Wait_Time(tm_top_wait, spc + 1, id_all - id_sw_ReclHome - id_sw_RiseHome).strip()
+        # result = Wait_Time(tm_top_wait, spc + 1, id_all - id_sw_ReclHome + id_sw_RiseHome).strip()
+        result = WaitLogic(tm_top_wait, False, id_sw_allLimits) #id_all - id_sw_RiseHome)
         resultStr = result.split(',')[0]
         resultTime = float(result.split(',')[1])
         
@@ -208,7 +277,7 @@ def Up_To_Out(tm_Dn_Runtime = 0):
             printF(spacer, "tm_Dn_Runtime = ", tm_Dn_Runtime)
             printF(spacer, "Time consumed: ", resultTime)
             printF(spacer, "durationTime = ", durationTime)
-            result = Down_To_Home(spc + 1, durationTime)
+            result = Down_To_Home(spc + 1, tm_out_to_home)
             
     printF(spacer + "EXIT: Returning to caller")
     return result
@@ -219,16 +288,17 @@ def Down_To_Home(spc = 1, duration = float(0.0)):
     printF(spacer, "rly_Dn ON")
     printF(spacer, "duration = ", duration)
     ignorer = 0
-    if id_sw_ReclHome:
-        ignorer = id_sw_ReclHome + id_btn_Logic_Dn  
-    result = Wait_Time(duration, spc + 1, id_all - ignorer, False)
+    #if id_sw_ReclHome:
+    ignorer = id_btn_Logic_Dn  
+    # result = Wait_Time(tm_out_to_home, spc + 1, id_all - ignorer, False)
+    result = WaitLogic(tm_out_to_home, False, id_all - id_btn_Logic_Dn)
     resultStr = result.split(',')[0]
     resultTime = result.split(',')[1]
 
     rly_Dn.value(OFF)
     printF(spacer, "rly_Dn OFF")
     
-    if sw_RiseHome.value() == ON:
+    if sw_RiseHome.value() == False:
         printF(spacer, ": complete. At home")
     else:
         if resultStr == "Time (True)" or resultStr == "tm_Dn_Runtime reached 0": 
